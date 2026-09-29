@@ -3,7 +3,7 @@
 
 import { http as msw, HttpResponse, delay } from 'msw';
 import { setupServer } from 'msw/node';
-import { __resetHttpForTests, configureHttp, hasAccessToken, http, refreshSession, setAccessToken } from './http';
+import { __resetHttpForTests, configureHttp, hasAccessToken, http, refreshSession, refreshSessionWithin, setAccessToken } from './http';
 import {
   ConflictError,
   CredentialError,
@@ -277,10 +277,55 @@ describe('error mapping', () => {
     expect(error.message).toMatch(/didn’t answer in time/);
   });
 
-  it('does not hold start-up on a hung refresh', async () => {
+  it('does not hold start-up on a slow refresh — it stops waiting, but never aborts the refresh', async () => {
     configureHttp({ timeoutMs: 50 });
-    server.use(msw.post(`${API}/api/auth/refresh-token`, async () => { await delay('infinite'); return HttpResponse.json({}); }));
-    expect(await refreshSession()).toBe(false);
+    const seen = { finished: false, aborted: false, calls: 0 };
+    server.use(msw.post(`${API}/api/auth/refresh-token`, async ({ request }) => {
+      seen.calls++;
+      await delay(200);
+      seen.aborted = request.signal.aborted;
+      seen.finished = true;
+      return HttpResponse.json({ accessToken: 'late-but-valid', email: 'a@b.c', userId: 'u' });
+    }));
+
+    expect(await refreshSessionWithin()).toBe(false); // the caller moves on after 50ms
+
+    // Meanwhile another refresh is wanted: it must join the one still running, not send the old cookie again.
+    const joined = refreshSession();
+    await vi.waitFor(() => expect(seen.finished).toBe(true), { timeout: 1000 });
+    expect(await joined).toBe(true);
+    expect(seen.calls).toBe(1);
+    expect(seen.aborted).toBe(false);
+    expect(hasAccessToken()).toBe(true); // the rotated token was kept, so the cookie and token agree
+  });
+
+  it('sends the refresh with no abort signal at all', async () => {
+    let signalOnRequest: AbortSignal | undefined;
+    const realFetch = globalThis.fetch;
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      if (String(input).endsWith('/api/auth/refresh-token')) signalOnRequest = init?.signal ?? undefined;
+      return realFetch(input, init);
+    });
+    server.use(msw.post(`${API}/api/auth/refresh-token`, () => HttpResponse.json({ accessToken: 't', email: 'a@b.c', userId: 'u' })));
+    await refreshSession();
+    spy.mockRestore();
+    expect(signalOnRequest).toBeUndefined();
+  });
+
+  it('ends the session on a hung refresh during a 401, without aborting the refresh', async () => {
+    configureHttp({ timeoutMs: 50 });
+    setAccessToken('expired');
+    let aborted: boolean | undefined;
+    server.use(
+      msw.get(`${API}/api/users/me`, () => HttpResponse.json({ message: 'Unauthorized', status: 401 }, { status: 401 })),
+      msw.post(`${API}/api/auth/refresh-token`, async ({ request }) => {
+        await delay(150);
+        aborted = request.signal.aborted;
+        return HttpResponse.json({ message: 'Invalid refresh token.', status: 401 }, { status: 401 });
+      }),
+    );
+    await expect(http.get('/api/users/me')).rejects.toBeInstanceOf(SessionExpiredError);
+    await vi.waitFor(() => expect(aborted).toBe(false), { timeout: 1000 });
   });
 
   it('still lets the caller cancel, and does not report that as an error of ours', async () => {

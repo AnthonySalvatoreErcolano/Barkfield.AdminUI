@@ -66,6 +66,14 @@ export function hasAccessToken() {
 // is only ever one refresh in flight: the first caller creates the promise, everyone else awaits that
 // same promise, and it is cleared once it settles.
 
+//
+// And the refresh is NEVER aborted — no caller signal, no timeout signal. The server rotates the token
+// and revokes the old one before it writes the response; a request cut off mid-flight leaves the browser
+// holding the revoked cookie, and the next refresh presents it — reuse detected, every session revoked.
+// It is the one request in the app that always runs to completion. A caller that cannot wait stops
+// *waiting* (refreshSessionWithin); the request itself carries on, and stays the shared in-flight
+// promise until it settles, so nothing can start a second refresh with the old cookie meanwhile.
+
 let refreshInFlight: Promise<boolean> | null = null;
 
 /**
@@ -75,8 +83,8 @@ let refreshInFlight: Promise<boolean> | null = null;
 export function refreshSession(): Promise<boolean> {
   refreshInFlight ??= (async () => {
     try {
-      // No bearer header: the httpOnly cookie is the credential.
-      const res = await fetch(baseUrl + '/api/auth/refresh-token', { method: 'POST', credentials: 'include', signal: withTimeout() });
+      // No bearer header: the httpOnly cookie is the credential. No signal: see above.
+      const res = await fetch(baseUrl + '/api/auth/refresh-token', { method: 'POST', credentials: 'include' });
       if (!res.ok) return false;
       const body = (await res.json()) as { accessToken?: string };
       if (!body.accessToken) return false;
@@ -89,6 +97,16 @@ export function refreshSession(): Promise<boolean> {
     refreshInFlight = null;
   });
   return refreshInFlight;
+}
+
+/**
+ * Wait up to the request time limit for the shared refresh. Resolves false if it has not answered by
+ * then — the caller moves on (to sign-in), but the refresh is left running, never aborted.
+ */
+export function refreshSessionWithin(ms = timeoutMs): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const gaveUp = new Promise<boolean>(resolve => { timer = setTimeout(() => resolve(false), ms); });
+  return Promise.race([refreshSession(), gaveUp]).finally(() => clearTimeout(timer));
 }
 
 let expiring = false;
@@ -252,7 +270,7 @@ async function send(req: RawRequest): Promise<unknown> {
     if (res.status === 401 && !isAnonymous) {
       // If another request already refreshed while this one was in flight, the new token is in hand —
       // use it rather than spending the refresh cookie again.
-      const renewed = accessToken !== null && accessToken !== sentWith ? true : await refreshSession();
+      const renewed = accessToken !== null && accessToken !== sentWith ? true : await refreshSessionWithin();
       if (!renewed) endSession();
 
       // Retry exactly once. A second 401 with a fresh token is not expiry, so there is no loop.

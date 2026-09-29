@@ -1,5 +1,5 @@
 // Live implementations over http.ts. No cross-cutting concerns here — those all belong to http.ts.
-import { clearAccessToken, configureHttp, http, refreshSession, setAccessToken } from '../http';
+import { clearAccessToken, configureHttp, http, refreshSessionWithin, setAccessToken } from '../http';
 import type { Api } from '../ports';
 
 export function createLiveApi(): Api {
@@ -21,7 +21,8 @@ export function createLiveApi(): Api {
           clearAccessToken();
         }
       },
-      restore: refreshSession,
+      // Waits a bounded time; the refresh itself is never aborted (see http.ts).
+      restore: () => refreshSessionWithin(),
       async forgotPassword(body) {
         await http.post('/api/auth/forgot-password', { body });
       },
