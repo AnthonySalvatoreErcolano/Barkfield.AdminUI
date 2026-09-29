@@ -127,6 +127,27 @@ export interface DeliveriesPort {
   photo(deliveryId: string, photoUuid: string): Promise<Blob>;
 }
 
+export type ProcurementProduct = Schemas['ProcurementProductDto'];
+export type ProcurementLine = Schemas['ProcurementLineDto'];
+export type ProcurementDecision = Schemas['ProcurementLineDecisionRequest'];
+export type ProcurementResult = Schemas['ProcurementUpdateResult'];
+
+/** Both procurement reads take the same filter; from and to are required — the range is the screen. */
+export type ProcurementQuery = NonNullable<paths['/api/procurement/lines']['get']['parameters']['query']>;
+
+export interface ProcurementPort {
+  /** The ordering pass: one row per product across the range. pendingQuantity goes on the supplier order. */
+  products(query: ProcurementQuery, signal?: AbortSignal): Promise<Schemas['PagedResultOfProcurementProductDto']>;
+  /** The receiving and allocating pass: flat lines, each carrying deliveryId + lineId. */
+  lines(query: ProcurementQuery, signal?: AbortSignal): Promise<Schemas['PagedResultOfProcurementLineDto']>;
+  /**
+   * Several decisions in one request — applied with one save per delivery, so adjacent rows of the same
+   * delivery cannot 409 against each other. Partial failure is a 200 with per-line results.
+   * For a single row, use DeliveriesPort.lineAction instead.
+   */
+  apply(decisions: ProcurementDecision[]): Promise<ProcurementResult>;
+}
+
 export interface ProductsPort {
   list(query: NonNullable<paths['/api/products']['get']['parameters']['query']>, signal?: AbortSignal): Promise<ProductPage>;
 }
@@ -137,4 +158,5 @@ export interface Api {
   customers: CustomersPort;
   deliveries: DeliveriesPort;
   products: ProductsPort;
+  procurement: ProcurementPort;
 }

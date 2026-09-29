@@ -73,7 +73,7 @@ function DeliveryView({ delivery: d }: { delivery: DeliveryDetail }) {
     <div>
       <PageHeader
         title={d.customerName}
-        eyebrow={`${formatDay(d.scheduledFor, 'long')} · ${d.isOneOff ? 'One-off delivery' : d.subscriptionName ?? ''}`}
+        eyebrow={`${formatDay(d.scheduledFor, 'long')} · ${d.isOneOff ? 'One-off delivery' : d.subscriptionName ?? 'Unnamed subscription'}`}
         actions={<>
           {canPack ? (
             <Can call="POST /api/deliveries/{deliveryId}/pack">
@@ -117,7 +117,13 @@ function DeliveryView({ delivery: d }: { delivery: DeliveryDetail }) {
         </div>
       </div>
 
-      {lineDialog ? <LineActionDialog delivery={d} line={lineDialog} run={run} onClose={() => setLineDialog(null)} /> : null}
+      {lineDialog ? (
+        <LineActionDialog
+          target={{ ...lineDialog, locked: d.contentsAreLocked }}
+          onClose={() => setLineDialog(null)}
+          submit={action => run(() => api.deliveries.lineAction(d.id, lineDialog.id, action), { title: `${lineDialog.productName} updated` })}
+        />
+      ) : null}
       {adding ? <AddLineDialog delivery={d} run={run} onClose={() => setAdding(false)} /> : null}
       {manage === 'notes' ? <NotesDialog delivery={d} run={run} onClose={() => setManage(null)} /> : null}
       {manage === 'stop' ? <StopDialog delivery={d} run={run} onClose={() => setManage(null)} /> : null}

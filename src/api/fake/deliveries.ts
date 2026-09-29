@@ -8,21 +8,15 @@
 import { DeliveryLineSource, DeliveryStatus, DeliveryStatusNames, FulfillmentMethod, LineOrderStatus, PaymentStatus, SubscriptionStatus } from '../generated/enums';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { SORT_KEYS } from '../sortKeys';
-import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, ProductsPort } from '../ports';
+import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, LineAction, ProductsPort } from '../ports';
 import { makeLine, recompute, toDeliveryListItem } from './deliveryModel';
 import type { Seed } from './seed';
 
 const dateOnly = (iso: string) => iso.slice(0, 10);
 const asDay = (date: string) => dateOnly(date) + 'T00:00:00Z';
 
-export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): DeliveriesPort {
-  const conflictOnce = new Set(db.deliveries.filter(d => d.customerName === 'Tess Nolan' && !d.isClosed).map(d => d.id));
-
-  const find = (id: string) => {
-    const d = db.deliveries.find(x => x.id === id);
-    if (!d) throw new NotFoundError(`Delivery with ID '${id}' was not found.`);
-    return d;
-  };
+/** The domain guards and line transitions, shared by the delivery detail and the procurement board fakes. */
+export function lineRules(db: Seed) {
   const findLine = (d: DeliveryDetail, lineId: string) => {
     const l = d.lines.find(x => x.id === lineId);
     if (!l) throw new ValidationError(`Delivery line '${lineId}' was not found on this delivery.`);
@@ -43,6 +37,57 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
     }
   };
 
+  const setLine = (l: DeliveryLine, status: number, note?: string) => {
+    l.orderStatus = status as DeliveryLine['orderStatus'];
+    l.substitutedWithProductId = null;
+    l.substitutedWithProductName = null;
+    l.substitutedWithUnitPrice = null;
+    l.statusNote = note?.trim() || null;
+    l.statusUpdatedAt = new Date().toISOString();
+  };
+
+  /** One procurement decision on one line, under the domain's guards. Throws ValidationError. */
+  const applyLineAction = (d: DeliveryDetail, lineId: string, action: LineAction) => {
+    ensureOpen(d);
+    const l = findLine(d, lineId);
+    switch (action.kind) {
+      case 'ordered': setLine(l, LineOrderStatus.Ordered, action.note); break;
+      case 'out-of-stock': setLine(l, LineOrderStatus.OutOfStock, action.note); break;
+      case 'short': setLine(l, LineOrderStatus.Shorted, action.note); break;
+      case 'reset': setLine(l, LineOrderStatus.Pending, action.note); l.quantityReceived = 0; break;
+      case 'received': {
+        const qty = action.quantityReceived ?? l.quantity;
+        if (qty < 0) throw new ValidationError('Received quantity cannot be negative.');
+        // Derived from the count, not taken on trust: fewer than ordered stays on the worklist.
+        setLine(l, qty === 0 ? LineOrderStatus.Ordered : qty >= l.quantity ? LineOrderStatus.Received : LineOrderStatus.PartiallyReceived, action.note);
+        l.quantityReceived = qty;
+        break;
+      }
+      case 'substitute': {
+        // A substitute carries its own price, so it changes the contents — refused once paid.
+        ensureContentsEditable(d);
+        const p = product(action.substituteProductId);
+        if (!p.isActive) throw new ValidationError(`Replacement product '${p.id}' was not found.`);
+        setLine(l, LineOrderStatus.Substituted, action.note);
+        l.substitutedWithProductId = p.id;
+        l.substitutedWithProductName = p.name;
+        l.substitutedWithUnitPrice = p.price;
+        break;
+      }
+    }
+  };
+  return { findLine, product, ensureOpen, ensureContentsEditable, setLine, applyLineAction };
+}
+
+export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): DeliveriesPort {
+  const { findLine, product, ensureOpen, ensureContentsEditable, setLine, applyLineAction } = lineRules(db);
+  const conflictOnce = new Set(db.deliveries.filter(d => d.customerName === 'Tess Nolan' && !d.isClosed).map(d => d.id));
+
+  const find = (id: string) => {
+    const d = db.deliveries.find(x => x.id === id);
+    if (!d) throw new NotFoundError(`Delivery with ID '${id}' was not found.`);
+    return d;
+  };
   /** Load, change, save with the revision bumped — and the one planned collision. */
   const mutate = (id: string, change: (d: DeliveryDetail) => void) => {
     const d = find(id);
@@ -59,15 +104,6 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
     d.revision++;
     d.updatedAt = new Date().toISOString();
     recompute(d);
-  };
-
-  const setLine = (l: DeliveryLine, status: number, note?: string) => {
-    l.orderStatus = status as DeliveryLine['orderStatus'];
-    l.substitutedWithProductId = null;
-    l.substitutedWithProductName = null;
-    l.substitutedWithUnitPrice = null;
-    l.statusNote = note?.trim() || null;
-    l.statusUpdatedAt = new Date().toISOString();
   };
 
   const dueFor = (date: string): DueSubscription[] => {
@@ -90,7 +126,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
           : s.fulfillmentMethod === FulfillmentMethod.LocalDelivery && !customer.hasAddress ? 'The customer has no address on file for a local delivery.'
           : null;
         return {
-          subscriptionId: s.id, subscriptionName: s.displayName, customerId: s.customerId, customerName: s.customerName,
+          subscriptionId: s.id, subscriptionName: s.name, customerId: s.customerId, customerName: s.customerName,
           nextDeliveryDate: s.nextDeliveryDate, status: s.status, statusName: s.statusName, fulfillmentMethod: s.fulfillmentMethod, fulfillmentMethodName: s.fulfillmentMethodName,
           pausedUntil: s.pausedUntil, customerHasAddress: customer.hasAddress, alreadyGenerated, scheduledLineCount: lineCount,
           resumingFromPause: s.status === SubscriptionStatus.Paused && s.pausedUntil !== null,
@@ -178,7 +214,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         const s = db.subscriptions.find(x => x.id === candidate.subscriptionId)!;
         const items = db.subscriptionItems.get(s.id) ?? [];
         const lines = items.map(it => makeLine(product(it.productId), it.quantity, DeliveryLineSource.Recurring, s.id));
-        created.push(newDelivery(s.customerId, s.id, s.displayName, date, s.fulfillmentMethod, lines, null).id);
+        created.push(newDelivery(s.customerId, s.id, s.name, date, s.fulfillmentMethod, lines, null).id);
         if (candidate.resumingFromPause) {
           resumed.push(s.id);
           s.status = SubscriptionStatus.Active as typeof s.status;
@@ -190,7 +226,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         s.nextDeliveryDate = new Date(Date.parse(asDay(date)) + cycle * 86_400_000).toISOString().slice(0, 10) + 'T00:00:00Z';
       }
       const skipped = due.filter(d => !d.willGenerate).map(d => ({
-        subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName ?? '', customerName: d.customerName, reason: d.skipReason!,
+        subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName ?? 'Unnamed subscription', customerName: d.customerName, reason: d.skipReason!,
       }));
       return {
         deliveryDate: asDay(date), considered: due.length, createdDeliveryIds: created, resumedFromPause: resumed, skipped,
@@ -234,34 +270,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
 
     async lineAction(id, lineId, action) {
       await wait();
-      mutate(id, d => {
-        ensureOpen(d);
-        const l = findLine(d, lineId);
-        switch (action.kind) {
-          case 'ordered': setLine(l, LineOrderStatus.Ordered, action.note); break;
-          case 'out-of-stock': setLine(l, LineOrderStatus.OutOfStock, action.note); break;
-          case 'short': setLine(l, LineOrderStatus.Shorted, action.note); break;
-          case 'reset': setLine(l, LineOrderStatus.Pending, action.note); l.quantityReceived = 0; break;
-          case 'received': {
-            const qty = action.quantityReceived ?? l.quantity;
-            if (qty < 0) throw new ValidationError('Received quantity cannot be negative.');
-            // Derived from the count, not taken on trust: fewer than ordered stays on the worklist.
-            setLine(l, qty === 0 ? LineOrderStatus.Ordered : qty >= l.quantity ? LineOrderStatus.Received : LineOrderStatus.PartiallyReceived, action.note);
-            l.quantityReceived = qty;
-            break;
-          }
-          case 'substitute': {
-            // A substitute carries its own price, so it changes the contents — refused once paid.
-            ensureContentsEditable(d);
-            const p = product(action.substituteProductId);
-            setLine(l, LineOrderStatus.Substituted, action.note);
-            l.substitutedWithProductId = p.id;
-            l.substitutedWithProductName = p.name;
-            l.substitutedWithUnitPrice = p.price;
-            break;
-          }
-        }
-      });
+      mutate(id, d => applyLineAction(d, lineId, action));
     },
 
     async orderAll(id, note) {

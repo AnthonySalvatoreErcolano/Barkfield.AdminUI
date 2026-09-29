@@ -9,6 +9,7 @@ import { RateLimitError, SignInError, ValidationError } from '../errors';
 import type { Api, UserDetail } from '../ports';
 import { createFakeCustomers } from './customers';
 import { createFakeDeliveries, createFakeProducts } from './deliveries';
+import { createFakeProcurement } from './procurement';
 import { createSeed, type Seed } from './seed';
 
 /** The fake's sign-in password, for every seeded account. Shown on the login screen in fake mode. */
@@ -145,6 +146,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     customers: createFakeCustomers(db, wait),
     deliveries: createFakeDeliveries(db, wait),
     products: createFakeProducts(db, wait),
+    procurement: createFakeProcurement(db, wait),
     fake: {
       db,
       expireSession() {

@@ -6,6 +6,7 @@ import { useSession } from '../session/SessionProvider';
 import { AccountPage } from '../pages/AccountPage';
 import { CustomersRoutes } from '../pages/customers/CustomersRoutes';
 import { DeliveriesRoutes } from '../pages/deliveries/DeliveriesRoutes';
+import { ProcurementPage } from '../pages/procurement/ProcurementPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { LoginPage, type LoginLocationState } from '../pages/auth/LoginPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
@@ -18,6 +19,7 @@ import { SCREENS, type Screen } from './nav';
 const BUILT: Record<string, () => ReactNode> = {
   customers: CustomersRoutes,
   deliveries: DeliveriesRoutes,
+  procurement: ProcurementPage,
 };
 
 function RequireSession() {

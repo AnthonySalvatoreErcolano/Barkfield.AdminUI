@@ -2,7 +2,7 @@
 // adding a product (delivery:manage). Only decisions that make sense are offered.
 import { useState, type FormEvent } from 'react';
 import { LineOrderStatus } from '../../api/generated/enums';
-import type { DeliveryDetail, DeliveryLine, LineAction, Product } from '../../api/ports';
+import type { DeliveryDetail, LineAction, Product } from '../../api/ports';
 import { ProductPicker } from '../../app/ProductPicker';
 import { LineStatusBadge } from '../../app/statusBadges';
 import { plural } from '../../lib/format';
@@ -12,20 +12,30 @@ import type { WriteOutcome } from './useDeliveryWrites';
 
 type Choice = 'ordered' | 'received-all' | 'received-some' | 'out-of-stock' | 'substitute' | 'short' | 'reset';
 
-export function LineActionDialog({ delivery, line, onClose, run }: {
-  delivery: DeliveryDetail;
-  line: DeliveryLine;
+/** The line being decided on, from wherever the screen has it (a delivery, or a procurement board row). */
+export interface LineTarget {
+  productId: string;
+  productName: string;
+  quantity: number;
+  quantityReceived: number;
+  orderStatus: number;
+  statusNote?: string | null;
+  /** Paid, so the contents are fixed. Undefined when the screen doesn't know (the board has no payment state). */
+  locked?: boolean;
+}
+
+export function LineActionDialog({ target: line, onClose, submit }: {
+  target: LineTarget;
   onClose: () => void;
-  run: (write: () => Promise<void>, success?: { title: string; message?: string }) => Promise<WriteOutcome>;
+  submit: (action: LineAction) => Promise<WriteOutcome>;
 }) {
-  const api = useApi();
   const [choice, setChoice] = useState<Choice | ''>('');
   const [received, setReceived] = useState(String(line.quantityReceived || ''));
   const [note, setNote] = useState('');
   const [substitute, setSubstitute] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const locked = delivery.contentsAreLocked;
+  const locked = line.locked === true;
   const receivedCount = Number(received);
 
   const action = (): LineAction | null => {
@@ -43,7 +53,7 @@ export function LineActionDialog({ delivery, line, onClose, run }: {
     }
   };
 
-  const submit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const a = action();
     if (!a) {
@@ -53,7 +63,7 @@ export function LineActionDialog({ delivery, line, onClose, run }: {
     }
     setBusy(true);
     setError(null);
-    const outcome = await run(() => api.deliveries.lineAction(delivery.id, line.id, a), { title: `${line.productName} updated` });
+    const outcome = await submit(a);
     setBusy(false);
     if (outcome.ok || outcome.conflict) onClose();
     else setError(outcome.message);
@@ -70,7 +80,7 @@ export function LineActionDialog({ delivery, line, onClose, run }: {
         <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
         <Button type="submit" form="line-action" disabled={busy || !choice}>{busy ? 'Saving…' : 'Save'}</Button>
       </>}>
-      <form id="line-action" onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <form id="line-action" onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {option('ordered', 'Ordered from the supplier', 'Add the PO number in the note if you have one.')}
         {option('received-all', line.quantity === 1 ? 'It arrived' : `All ${line.quantity} arrived`)}
         {line.quantity > 1 ? option('received-some', 'Only some arrived', 'The line stays open for the rest, so nobody forgets to order the shortfall.') : null}
@@ -81,11 +91,13 @@ export function LineActionDialog({ delivery, line, onClose, run }: {
         {option('out-of-stock', 'Out of stock', 'Blocks packing until someone decides: substitute, short it, or wait.')}
         {option('substitute', 'Send something else instead', locked
           ? 'Not after payment — a substitute has its own price, which would change what they paid for.'
+          : line.locked === undefined ? 'For this customer only. Refused if they’ve already paid — a substitute has its own price.'
           : 'For this customer only — the substitute carries its own price.', locked)}
         {choice === 'substitute' ? <div style={{ marginLeft: 28 }}><ProductPicker label="Substitute" value={substitute} onChange={setSubstitute} excludeId={line.productId} /></div> : null}
-        {option('short', 'Send without it', delivery.hasPaid
+        {option('short', 'Send without it', line.locked === true
           ? 'They’ve already paid, so this flags the delivery for a refund in Square.'
-          : 'They won’t be charged for it.')}
+          : line.locked === false ? 'They won’t be charged for it.'
+          : 'They won’t be charged for it — or, if they’ve already paid, the delivery is flagged for a refund.')}
         {line.orderStatus !== LineOrderStatus.Pending ? option('reset', 'Undo — back to pending', 'For a mis-click.') : null}
         <Input label="Note (optional)" value={note} onChange={e => setNote(e.target.value)} maxLength={500} placeholder="e.g. PO 4471, or why" />
         {error ? <Alert tone="danger">{error}</Alert> : null}

@@ -228,7 +228,8 @@ export function createSeed(): Seed {
           return makeLine(product, it.quantity, DeliveryLineSource.Recurring, subId, lineStatus(n));
         });
         return recompute({
-          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: displayName, customerId: id, customerName: `${p.first} ${p.last}`,
+          // The API sends null here for an unnamed subscription — the composed label is only on the subscription DTOs.
+          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: plan.name, customerId: id, customerName: `${p.first} ${p.last}`,
           scheduledFor: day(when), completedAt: null, status: DeliveryStatus.Scheduled as DeliveryDetail['status'],
           fulfillmentMethod: method, procurementStatus: 1 as DeliveryDetail['procurementStatus'],
           paymentStatus: PaymentStatus.NotCharged as DeliveryDetail['paymentStatus'], paymentAttemptCount: 0,
@@ -270,7 +271,9 @@ export function createSeed(): Seed {
       }
 
       if (!generatedToday) return;
-      const state: TodayState = p.first === 'Tess' ? 'inProgress'
+      // Ann's box stays untouched (all pending): the procurement fake makes it "keep changing", and a
+      // receive-all should never trip on it.
+      const state: TodayState = p.first === 'Tess' ? 'inProgress' : p.first === 'Ann' ? 'notStarted'
         : ['Marcus', 'Kate', 'Pat', 'Frank'].includes(p.first) ? 'ready'
         : TODAY_PATTERN[todayIndex % TODAY_PATTERN.length]!;
       todayIndex++;

@@ -83,7 +83,7 @@ export function GenerateDeliveriesPage() {
             rows={due} rowKey={d => d.subscriptionId}
             empty={preview.isPending ? 'Loading…' : 'Nothing is due for this day.'}
             columns={[
-              { key: 'customer', header: 'Customer', render: d => <div><div style={{ fontWeight: 600 }}>{d.customerName}</div><div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{d.subscriptionName}</div></div> },
+              { key: 'customer', header: 'Customer', render: d => <div><div style={{ fontWeight: 600 }}>{d.customerName}</div><div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{d.subscriptionName ?? 'Unnamed subscription'}</div></div> },
               {
                 key: 'due', header: 'Due',
                 render: d => d.alreadyGenerated ? <span style={{ color: 'var(--text-muted)' }}>Created</span> : <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>

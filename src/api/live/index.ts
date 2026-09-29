@@ -131,5 +131,10 @@ export function createLiveApi(): Api {
     products: {
       list: (query, signal) => http.get('/api/products', { query, signal }),
     },
+    procurement: {
+      products: (query, signal) => http.get('/api/procurement/products', { query, signal }),
+      lines: (query, signal) => http.get('/api/procurement/lines', { query, signal }),
+      apply: decisions => http.post('/api/procurement/lines/status', { body: { lines: decisions } }),
+    },
   };
 }

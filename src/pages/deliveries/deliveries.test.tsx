@@ -27,6 +27,10 @@ describe('worklist', () => {
     expect(within(table()).getAllByText(/to resolve/).length).toBeGreaterThan(3);
     expect(within(table()).getAllByText('Ready to pack').length).toBeGreaterThan(0);
 
+    // An unnamed subscription arrives with subscriptionName null; it is not a one-off.
+    expect(within(table()).getAllByText('Unnamed subscription').length).toBeGreaterThan(0);
+    expect(within(table()).queryByText('One-off delivery')).not.toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'Blocked' }));
     await waitFor(() => {
       const rows = within(table()).getAllByRole('row').slice(1);

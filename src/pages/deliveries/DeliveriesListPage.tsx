@@ -73,7 +73,7 @@ export function DeliveriesListPage() {
       render: d => (
         <div>
           <div style={{ fontWeight: 600 }}>{d.customerName}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{d.isOneOff ? 'One-off delivery' : d.subscriptionName}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{d.isOneOff ? 'One-off delivery' : d.subscriptionName ?? 'Unnamed subscription'}</div>
         </div>
       ),
     },
