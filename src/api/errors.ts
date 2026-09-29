@@ -108,6 +108,14 @@ export class NetworkError extends ApiError {
   }
 }
 
+/**
+ * The server accepted the connection but never answered — a hung API or database. Without a limit the
+ * screen would wait forever; with one, the user gets a message and a retry.
+ */
+export class TimeoutError extends NetworkError {
+  override readonly message = 'The server didn’t answer in time. Try again in a moment.';
+}
+
 /** The session could not be renewed. State has been cleared and the app sent to sign-in. */
 export class SessionExpiredError extends ApiError {
   readonly status = 401;

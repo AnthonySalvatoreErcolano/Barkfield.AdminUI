@@ -1,5 +1,5 @@
 // Page-level layout pieces shared across screens.
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import logoUrl from '../../design/assets/logos/logo.svg';
 import { injectStyles } from '../ui/injectStyles';
 
@@ -48,12 +48,18 @@ export function AuthCard({ title, lede, children, footer }: { title: ReactNode; 
   );
 }
 
-/** Full-page state while the session is being restored on load. */
+/** Full-page state while the session is being restored on load. Says so if it takes more than a moment. */
 export function Splash() {
   injectStyles('layout', CSS);
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
   return (
-    <main className="auth" aria-busy="true">
+    <main className="auth" aria-busy="true" style={{ flexDirection: 'column' }}>
       <img className="auth__logo" src={logoUrl} alt="Barkfield Road — loading" />
+      {slow ? <p className="auth__lede" role="status">Connecting to the server…</p> : null}
     </main>
   );
 }

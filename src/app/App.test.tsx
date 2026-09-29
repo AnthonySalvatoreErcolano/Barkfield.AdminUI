@@ -9,7 +9,7 @@ import { SessionProvider } from '../session/SessionProvider';
 import { App } from './App';
 import { ToastProvider } from './toast';
 
-function renderApp(path = '/', api = createFakeApi({ latency: false })) {
+function renderApp(path = '/', api = createFakeApi({ latency: false, persistSession: false })) {
   const user = userEvent.setup();
   render(
     <StrictMode>
@@ -37,7 +37,7 @@ const nav = () => within(screen.getByRole('navigation', { name: 'Main' }));
 
 describe('session', () => {
   it('lands on sign-in when there is no session to restore, and restores only once under StrictMode', async () => {
-    const api = createFakeApi({ latency: false });
+    const api = createFakeApi({ latency: false, persistSession: false });
     const restore = vi.spyOn(api.auth, 'restore');
     renderApp('/', api);
 

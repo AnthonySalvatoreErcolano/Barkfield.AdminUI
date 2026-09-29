@@ -15,6 +15,7 @@ import {
   ServerError,
   SessionExpiredError,
   SignInError,
+  TimeoutError,
   UnavailableError,
   ValidationError,
 } from './errors';
@@ -266,6 +267,30 @@ describe('error mapping', () => {
     respond(400, 'Contents cannot be changed once the delivery is paid for.');
     const error = await http.get('/api/customers').catch(e => e);
     expect(error.fieldErrors).toEqual({});
+  });
+
+  it('gives up on a server that accepts the request but never answers', async () => {
+    configureHttp({ timeoutMs: 50 });
+    server.use(msw.get(`${API}/api/customers`, async () => { await delay('infinite'); return HttpResponse.json({}); }));
+    const error = await http.get('/api/customers').catch(e => e);
+    expect(error).toBeInstanceOf(TimeoutError);
+    expect(error.message).toMatch(/didn’t answer in time/);
+  });
+
+  it('does not hold start-up on a hung refresh', async () => {
+    configureHttp({ timeoutMs: 50 });
+    server.use(msw.post(`${API}/api/auth/refresh-token`, async () => { await delay('infinite'); return HttpResponse.json({}); }));
+    expect(await refreshSession()).toBe(false);
+  });
+
+  it('still lets the caller cancel, and does not report that as an error of ours', async () => {
+    server.use(msw.get(`${API}/api/customers`, async () => { await delay('infinite'); return HttpResponse.json({}); }));
+    const controller = new AbortController();
+    const pending = http.get('/api/customers', { signal: controller.signal }).catch(e => e);
+    controller.abort();
+    const error = await pending;
+    expect(error.name).toBe('AbortError');
+    expect(error).not.toBeInstanceOf(NetworkError);
   });
 
   it('reports an unreachable server as a network error', async () => {

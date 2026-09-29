@@ -7,6 +7,8 @@
 import { PERMISSIONS, type Permission } from '../generated/permissions';
 import { RateLimitError, SignInError, ValidationError } from '../errors';
 import type { Api, UserDetail } from '../ports';
+import { createFakeCustomers } from './customers';
+import { createSeed, type Seed } from './seed';
 
 /** The fake's sign-in password, for every seeded account. Shown on the login screen in fake mode. */
 export const FAKE_PASSWORD = 'barkfield-dev';
@@ -41,19 +43,32 @@ function seedUsers(): UserDetail[] {
   ];
 }
 
-const pause = (ms = 180 + Math.random() * 220) => new Promise(r => setTimeout(r, ms));
+const pause = (ms = 180 + Math.random() * 220) => new Promise<void>(r => setTimeout(r, ms));
 
 export interface FakeControls {
   /** Simulate the refresh token being revoked mid-session. */
   expireSession(): void;
+  /** The fake's data, for tests that need to change something behind the screen's back. */
+  db: Seed;
 }
 
-export function createFakeApi(options: { latency?: boolean } = {}): Api & { fake: FakeControls } {
+// Fake mode is what gets shown to clients from a preview deployment. Remembering which demo account is
+// signed in (never a token — the fake has none) lets a reload behave like a live session would.
+const SESSION_KEY = 'barkfield-fake-session';
+const storage = {
+  get(): string | null { try { return sessionStorage.getItem(SESSION_KEY); } catch { return null; } },
+  set(id: string | null) { try { if (id) sessionStorage.setItem(SESSION_KEY, id); else sessionStorage.removeItem(SESSION_KEY); } catch { /* storage blocked */ } },
+};
+
+export function createFakeApi(options: { latency?: boolean; persistSession?: boolean } = {}): Api & { fake: FakeControls } {
   const wait = options.latency === false ? () => Promise.resolve() : pause;
+  const persist = options.persistSession ?? true;
+  const db = createSeed();
   const users = seedUsers();
   const passwords = new Map(users.map(u => [u.id, FAKE_PASSWORD]));
   const expiredListeners = new Set<() => void>();
-  let signedInId: string | null = null;
+  let signedInId: string | null = persist ? storage.get() : null;
+  const setSignedIn = (id: string | null) => { signedInId = id; if (persist) storage.set(id); };
   let failedSignIns = 0;
 
   const current = () => {
@@ -82,17 +97,15 @@ export function createFakeApi(options: { latency?: boolean } = {}): Api & { fake
           throw new SignInError('Invalid email or password.');
         }
         failedSignIns = 0;
-        signedInId = user.id;
+        setSignedIn(user.id);
       },
       async logout() {
         await wait();
-        signedInId = null;
+        setSignedIn(null);
       },
       async restore() {
         await wait();
-        // The fake has no cookie, so a reload always lands on sign-in — as a live session would
-        // after its refresh token expired.
-        return signedInId !== null;
+        return users.some(u => u.id === signedInId);
       },
       async forgotPassword() {
         await wait();
@@ -105,7 +118,7 @@ export function createFakeApi(options: { latency?: boolean } = {}): Api & { fake
         const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
         if (!user || resetToken !== 'valid-token') throw new ValidationError('The reset link is invalid or has expired.');
         passwords.set(user.id, newPassword);
-        if (signedInId === user.id) signedInId = null; // a reset revokes every session
+        if (signedInId === user.id) setSignedIn(null); // a reset revokes every session
       },
       onSessionExpired(listener) {
         expiredListeners.add(listener);
@@ -126,9 +139,11 @@ export function createFakeApi(options: { latency?: boolean } = {}): Api & { fake
         passwords.set(user.id, newPassword);
       },
     },
+    customers: createFakeCustomers(db, wait),
     fake: {
+      db,
       expireSession() {
-        signedInId = null;
+        setSignedIn(null);
         expiredListeners.forEach(l => l());
       },
     },

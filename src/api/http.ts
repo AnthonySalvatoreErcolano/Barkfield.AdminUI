@@ -15,6 +15,7 @@ import {
   ServerError,
   SessionExpiredError,
   SignInError,
+  TimeoutError,
   UnavailableError,
   ValidationError,
   type ApiError,
@@ -24,11 +25,21 @@ import {
 
 let baseUrl: string = import.meta.env.VITE_API_BASE_URL ?? '';
 let onSessionExpired: () => void = () => {};
+// A request that is accepted but never answered (a paused or hung API) would otherwise leave the screen
+// waiting forever — including the start-up refresh, which would hold the whole app on its splash.
+let timeoutMs = 20_000;
 
 /** Called once at startup. `onSessionExpired` should send the app to the sign-in screen. */
-export function configureHttp(options: { baseUrl?: string; onSessionExpired?: () => void }) {
+export function configureHttp(options: { baseUrl?: string; onSessionExpired?: () => void; timeoutMs?: number }) {
   if (options.baseUrl !== undefined) baseUrl = options.baseUrl.replace(/\/$/, '');
   if (options.onSessionExpired) onSessionExpired = options.onSessionExpired;
+  if (options.timeoutMs !== undefined) timeoutMs = options.timeoutMs;
+}
+
+/** The caller's cancel signal, if any, combined with the request time limit. */
+function withTimeout(signal?: AbortSignal): AbortSignal {
+  const limit = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, limit]) : limit;
 }
 
 // --- the access token: memory only ---------------------------------------------------------------
@@ -65,7 +76,7 @@ export function refreshSession(): Promise<boolean> {
   refreshInFlight ??= (async () => {
     try {
       // No bearer header: the httpOnly cookie is the credential.
-      const res = await fetch(baseUrl + '/api/auth/refresh-token', { method: 'POST', credentials: 'include' });
+      const res = await fetch(baseUrl + '/api/auth/refresh-token', { method: 'POST', credentials: 'include', signal: withTimeout() });
       if (!res.ok) return false;
       const body = (await res.json()) as { accessToken?: string };
       if (!body.accessToken) return false;
@@ -166,9 +177,11 @@ type Body<P extends keyof paths, M extends Method> =
   [RequestBody<P, M>] extends [never] ? never
     : RequestBody<P, M> extends { content: { 'application/json': infer B } } ? B : never;
 
-/** The JSON body of the operation's 200 response, or void when it has none. */
+/** The JSON body of the operation's 200 (or 201 Created) response, or void when it has none. */
 export type ResponseOf<P extends keyof paths, M extends Method> =
-  Op<P, M> extends { responses: { 200: { content: { 'application/json': infer R } } } } ? R : void;
+  Op<P, M> extends { responses: { 200: { content: { 'application/json': infer R } } } } ? R
+    : Op<P, M> extends { responses: { 201: { content: { 'application/json': infer R } } } } ? R
+    : void;
 
 type Options<P extends keyof paths, M extends Method> =
   ([PathParams<P, M>] extends [never] ? { path?: never } : { path: PathParams<P, M> }) &
@@ -226,7 +239,7 @@ async function send(req: RawRequest): Promise<unknown> {
       // On every request, not only the refresh: the cookie is scoped to the API origin and the
       // browser will not attach it cross-origin otherwise.
       credentials: 'include',
-      signal: req.signal,
+      signal: withTimeout(req.signal),
     });
   };
 
@@ -248,7 +261,10 @@ async function send(req: RawRequest): Promise<unknown> {
     }
   } catch (error) {
     if (error instanceof SessionExpiredError) throw error;
-    if (error instanceof DOMException && error.name === 'AbortError') throw error; // our own cancel
+    // Checked by name: a DOMException from fetch is not always the same class as the global one.
+    const name = (error as { name?: string } | null)?.name;
+    if (name === 'TimeoutError') throw new TimeoutError();
+    if (name === 'AbortError') throw error; // the caller's own cancel
     throw new NetworkError();
   }
 
@@ -285,4 +301,5 @@ export function __resetHttpForTests() {
   refreshInFlight = null;
   expiring = false;
   onSessionExpired = () => {};
+  timeoutMs = 20_000;
 }

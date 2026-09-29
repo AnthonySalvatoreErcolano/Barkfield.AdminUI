@@ -39,5 +39,28 @@ export function createLiveApi(): Api {
         await http.post('/api/users/me/change-password', { body });
       },
     },
+    customers: {
+      list: (query, signal) => http.get('/api/customers', { query, signal }),
+      get: (customerId, signal) => http.get('/api/customers/{customerId}', { path: { customerId }, signal }),
+      create: body => http.post('/api/customers', { body }),
+      update: (customerId, body) => http.put('/api/customers/{customerId}', { path: { customerId }, body }),
+      async archive(customerId) {
+        await http.delete('/api/customers/{customerId}', { path: { customerId } });
+      },
+      async restore(customerId) {
+        await http.post('/api/customers/{customerId}/reactivate', { path: { customerId } });
+      },
+      async updateDeliveryDetails(customerId, body) {
+        await http.put('/api/customers/{customerId}/delivery-details', { path: { customerId }, body });
+      },
+      searchSquare: body => http.post('/api/customers/search-square', { body }),
+      syncSquare: customerId => http.post('/api/customers/{customerId}/sync-square', { path: { customerId } }),
+      pets: (customerId, includeInactive) =>
+        http.get('/api/customers/{customerId}/pets', { path: { customerId }, query: { includeInactive } }),
+      subscriptions: (customerId, includeCanceled) =>
+        http.get('/api/customers/{customerId}/subscriptions', { path: { customerId }, query: { includeCanceled } }),
+      deliveries: (customerId, page) =>
+        http.get('/api/customers/{customerId}/deliveries', { path: { customerId }, query: page }),
+    },
   };
 }

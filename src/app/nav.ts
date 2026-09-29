@@ -29,7 +29,7 @@ export const NAV: NavSection[] = [
   {
     title: 'Customers',
     screens: [
-      { id: 'customers', label: 'Customers', path: '/customers', icon: 'users', requires: 'GET /api/customers', built: false },
+      { id: 'customers', label: 'Customers', path: '/customers', icon: 'users', requires: 'GET /api/customers', built: true },
       { id: 'subscriptions', label: 'Subscriptions', path: '/subscriptions', icon: 'repeat', requires: 'GET /api/subscriptions', built: false },
     ],
   },

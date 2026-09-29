@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from '../session/SessionProvider';
 import { AccountPage } from '../pages/AccountPage';
+import { CustomersRoutes } from '../pages/customers/CustomersRoutes';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { LoginPage, type LoginLocationState } from '../pages/auth/LoginPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
@@ -13,7 +14,9 @@ import { Splash } from './layout';
 import { SCREENS, type Screen } from './nav';
 
 /** Screen id → its component, as screens get built. Anything missing shows the placeholder. */
-const BUILT: Record<string, () => ReactNode> = {};
+const BUILT: Record<string, () => ReactNode> = {
+  customers: CustomersRoutes,
+};
 
 function RequireSession() {
   const { state } = useSession();

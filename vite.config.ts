@@ -14,5 +14,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['src/test/setup.ts'],
+    // The shop's zone. A UTC machine would hide the midnight-UTC date-shift bug the formatters guard against.
+    env: { TZ: 'America/New_York' },
   },
 });
