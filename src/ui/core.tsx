@@ -64,6 +64,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
+/** Button styling for something that must not be a <button> itself — e.g. a dropdown trigger's content. */
+export function buttonClass(variant: NonNullable<ButtonProps['variant']> = 'primary', size: NonNullable<ButtonProps['size']> = 'md') {
+  injectStyles('button', BUTTON_CSS);
+  return cx('br-btn', 'br-btn--' + variant, 'br-btn--' + size);
+}
+
 export function Button({ variant = 'primary', size = 'md', iconLeft, iconRight, fullWidth, type = 'button', children, className, ...rest }: ButtonProps) {
   injectStyles('button', BUTTON_CSS);
   const iconSize = size === 'lg' ? 18 : size === 'sm' ? 14 : 16;

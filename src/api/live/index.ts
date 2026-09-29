@@ -62,5 +62,73 @@ export function createLiveApi(): Api {
       deliveries: (customerId, page) =>
         http.get('/api/customers/{customerId}/deliveries', { path: { customerId }, query: page }),
     },
+    deliveries: {
+      list: (query, signal) => http.get('/api/deliveries', { query, signal }),
+      get: (deliveryId, signal) => http.get('/api/deliveries/{deliveryId}', { path: { deliveryId }, signal }),
+      due: date => http.get('/api/deliveries/due', { query: { date } }),
+      generate: date => http.post('/api/deliveries/generate', { body: { deliveryDate: date } }),
+      async createOneOff(body) {
+        await http.post('/api/deliveries', { body });
+      },
+      sheet: range => http.get('/api/deliveries/sheet', { query: range }),
+      async lineAction(deliveryId, lineId, action) {
+        const path = { deliveryId, lineId };
+        const note = action.note?.trim() || null;
+        switch (action.kind) {
+          case 'ordered': await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/ordered', { path, body: { note } }); break;
+          case 'received':
+            await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/received', {
+              path, body: { quantityReceived: action.quantityReceived ?? null, note },
+            });
+            break;
+          case 'out-of-stock': await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/out-of-stock', { path, body: { note } }); break;
+          case 'substitute':
+            await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/substitute', {
+              path, body: { substituteProductId: action.substituteProductId, note },
+            });
+            break;
+          case 'short': await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/short', { path, body: { note } }); break;
+          case 'reset': await http.post('/api/deliveries/{deliveryId}/lines/{lineId}/reset', { path, body: { note } }); break;
+        }
+      },
+      async orderAll(deliveryId, note) {
+        await http.post('/api/deliveries/{deliveryId}/order-all', { path: { deliveryId }, body: { note: note?.trim() || null } });
+      },
+      async pack(deliveryId) {
+        await http.post('/api/deliveries/{deliveryId}/pack', { path: { deliveryId } });
+      },
+      async addLine(deliveryId, body) {
+        await http.post('/api/deliveries/{deliveryId}/lines', { path: { deliveryId }, body });
+      },
+      async changeQuantity(deliveryId, lineId, quantity) {
+        await http.put('/api/deliveries/{deliveryId}/lines/{lineId}/quantity', { path: { deliveryId, lineId }, body: { quantity } });
+      },
+      async removeLine(deliveryId, lineId) {
+        await http.delete('/api/deliveries/{deliveryId}/lines/{lineId}', { path: { deliveryId, lineId } });
+      },
+      async updateNotes(deliveryId, notes) {
+        await http.put('/api/deliveries/{deliveryId}/notes', { path: { deliveryId }, body: { notes } });
+      },
+      async setWindow(deliveryId, window) {
+        await http.put('/api/deliveries/{deliveryId}/window', { path: { deliveryId }, body: window });
+      },
+      async setServiceDuration(deliveryId, minutes) {
+        await http.put('/api/deliveries/{deliveryId}/service-duration', { path: { deliveryId }, body: { minutes } });
+      },
+      async markDelivered(deliveryId, deliveredOn) {
+        await http.post('/api/deliveries/{deliveryId}/delivered', { path: { deliveryId }, body: { deliveredOn: deliveredOn ?? null } });
+      },
+      async markFailed(deliveryId, reason) {
+        await http.post('/api/deliveries/{deliveryId}/failed', { path: { deliveryId }, body: { reason } });
+      },
+      async cancel(deliveryId) {
+        await http.delete('/api/deliveries/{deliveryId}', { path: { deliveryId } });
+      },
+      photo: (deliveryId, photoUuid) =>
+        http.blob('/api/dispatch/deliveries/{deliveryId}/photos/{photoUuid}', { path: { deliveryId, photoUuid } }),
+    },
+    products: {
+      list: (query, signal) => http.get('/api/products', { query, signal }),
+    },
   };
 }

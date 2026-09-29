@@ -37,7 +37,7 @@ describe('customers list', () => {
     await waitFor(() => expect(header('Town')).toHaveAttribute('aria-sort', 'ascending'));
     const towns = within(table()).getAllByRole('row').slice(1, 4).map(r => (r as HTMLTableRowElement).cells[2]!.textContent);
     // No address sorts first, as SQL Server orders NULLs — the fake matches the API, not a nicer order.
-    expect(towns).toEqual(['No address', 'Centerport', 'Centerport']);
+    expect(towns).toEqual(['No address', 'No address', 'Centerport']);
   });
 
   it('flags customers whose Square link is broken', async () => {

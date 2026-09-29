@@ -31,10 +31,13 @@ export function useListParams<P extends SortablePath>(endpoint: P, defaults: { d
     search: params.get('q') ?? '',
     sort: { key: sortKey, dir: (params.get('dir') as 'asc' | 'desc' | null) ?? defaults.dir ?? 'asc' } satisfies SortState,
     flag: (name: string) => params.get(name) === '1',
+    /** A free-form filter value (a date, a status number), or the fallback when absent. */
+    value: (name: string, fallback = '') => params.get(name) ?? fallback,
     setPage: (page: number) => update({ page }),
     setSearch: (q: string) => update({ q }, { replace: true }),
     setSort: (s: SortState) => update({ sort: s.key === allowed.default ? null : s.key, dir: s.dir === (defaults.dir ?? 'asc') ? null : s.dir }),
     setFlag: (name: string, on: boolean) => update({ [name]: on ? '1' : null }),
+    setValues: (values: Record<string, string | null>) => update(values),
     isSortable: (columnKey: string) => (allowed.keys as readonly string[]).includes(columnKey),
   };
 }

@@ -8,11 +8,14 @@
 //   - Sam Whitaker is being edited by someone else: his first save returns a 409
 //   - Tom Kearney's record changes behind your back a few seconds after you open it
 
-import { DeliveryStatus, FrequencyUnit, FulfillmentMethod, PaymentStatus, PetType, ProcurementStatus, SubscriptionStatus } from '../generated/enums';
-import type { CustomerDetail, DeliveryListItem, Pet, SquareCandidate, SubscriptionListItem } from '../ports';
+import { DeliveryLineSource, DeliveryStatus, FrequencyUnit, FulfillmentMethod, LineOrderStatus, PaymentStatus, PetType, SubscriptionStatus } from '../generated/enums';
+import type { CustomerDetail, DeliveryDetail, Pet, Product, SquareCandidate, SubscriptionListItem } from '../ports';
+import { makeLine, recompute } from './deliveryModel';
 
-// A fixed "today" for the seed, so relative dates read sensibly. Deliveries are laid out around it.
-const TODAY = new Date(Date.UTC(2026, 8, 29)); // Tue 29 Sep 2026
+// The seed is laid out around the viewer's own today (as a UTC-midnight date-only value, the way the API
+// sends dates), so a demo opened next week still has a busy day to show.
+const now = new Date();
+const TODAY = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
 const day = (offset: number) => new Date(TODAY.getTime() + offset * 86_400_000).toISOString().slice(0, 10) + 'T00:00:00Z';
 const instant = (offset: number, hour = 14) => new Date(TODAY.getTime() + offset * 86_400_000 + hour * 3_600_000).toISOString();
@@ -86,8 +89,8 @@ const PEOPLE: Person[] = [
   { first: 'Frank', last: 'DeLuca', town: 'Northport', street: '17 Bluff Point Rd', pets: [['Sarge', 'Doberman']], plans: [{ name: null, every: 4, unit: FrequencyUnit.Weeks, total: 97.5 }] },
   { first: 'Claire', last: 'Beaumont', town: 'Huntington', street: '240 Main St', pets: [['Remy', 'French Bulldog']], plans: [{ name: null, every: 4, unit: FrequencyUnit.Weeks, total: 68.8 }] },
   { first: 'Omar', last: 'Haddad', town: 'Kings Park', street: '36 Lawrence Rd', pets: [['Sahara', 'Saluki']], plans: [{ name: null, every: 4, unit: FrequencyUnit.Weeks, total: 72 }] },
-  { first: 'Beth', last: 'Sullivan', town: 'Centerport', street: '2 Prospect Rd', pets: [['Clover', 'Beagle']], plans: [{ name: null, every: 3, unit: FrequencyUnit.Weeks, total: 52.25 }] },
-  { first: 'Jake', last: 'Morrison', town: 'Syosset', street: '47 Split Rock Rd', pets: [], plans: [] },
+  { first: 'Beth', last: 'Sullivan', town: 'Centerport', street: '2 Prospect Rd', pets: [['Clover', 'Beagle']], plans: [{ name: null, every: 3, unit: FrequencyUnit.Weeks, total: 52.25, status: SubscriptionStatus.Paused }] },
+  { first: 'Jake', last: 'Morrison', town: 'Syosset', street: null, pets: [['Scout', 'Pointer']], plans: [{ name: null, every: 4, unit: FrequencyUnit.Weeks, total: 0 }], notes: 'Moved house — new address to come.' },
 ];
 
 const ZIP: Record<string, string> = {
@@ -99,19 +102,51 @@ export interface Seed {
   customers: CustomerDetail[];
   pets: Pet[];
   subscriptions: SubscriptionListItem[];
-  deliveries: DeliveryListItem[];
+  /** What each subscription ships, per cycle. */
+  subscriptionItems: Map<string, Array<{ productId: string; quantity: number }>>;
+  products: Product[];
+  deliveries: DeliveryDetail[];
   /** People in Square's directory — some already ours, some not yet. */
   squareDirectory: SquareCandidate[];
 }
 
+/** The fake's "today". Deliveries and due dates are laid out around it. */
+export const FAKE_TODAY = day(0);
+
 const email = (p: Person) => `${p.first}.${p.last}`.toLowerCase().replace(/[^a-z.]/g, '') + '@example.com';
+
+const CATALOG: Array<[name: string, price: number, active?: boolean]> = [
+  ['Open Farm Lamb & Oat 24 lb', 89.99], ['Open Farm Wild Salmon 24 lb', 94], ['Raw Bistro Beef 12 lb', 64.5], ['Raw Bistro Lamb 12 lb', 69],
+  ['Stella & Chewy’s Chicken 24 lb', 112.4], ['Farmina N&D Pumpkin 12 lb', 71.25], ['Honest Kitchen Base Mix 10 lb', 58.99],
+  ['Orijen Six Fish 23.5 lb', 118], ['Acana Wild Atlantic 25 lb', 99.99], ['Primal Venison Nuggets 14 oz', 36.99], ['Primal Beef Nuggets 14 oz', 34.99],
+  ['Weruva Cat Wet Food — case of 24', 42], ['Tiki Cat Chicken — 12 pack', 28.5], ['Green Tripe Topper 14 oz', 21.99],
+  ['Pumpkin Bites — bakery', 8.99], ['Peanut Butter Biscuits 1 lb', 12.5], ['Bully Sticks 6 in — 5 pack', 17.99], ['Wild Salmon Oil 16 oz', 24.99],
+  ['Bakery Box — Large', 24.5], ['Birthday Pupcake', 15], ['Blue Seal Chicken & Rice 30 lb', 54.99, false],
+];
+
+/** The day's mix of states — enough of each for every screen state to be reachable. */
+type TodayState = 'notStarted' | 'inProgress' | 'partial' | 'ready' | 'blocked' | 'packed';
+const TODAY_PATTERN: TodayState[] = ['notStarted', 'inProgress', 'ready', 'blocked', 'partial', 'notStarted', 'ready', 'packed', 'inProgress', 'notStarted'];
 
 export function createSeed(): Seed {
   counter = 0;
   const customers: CustomerDetail[] = [];
   const pets: Pet[] = [];
   const subscriptions: SubscriptionListItem[] = [];
-  const deliveries: DeliveryListItem[] = [];
+  const subscriptionItems = new Map<string, Array<{ productId: string; quantity: number }>>();
+  const deliveries: DeliveryDetail[] = [];
+
+  const products: Product[] = CATALOG.map(([name, price, active = true], i) => ({
+    id: uuid('9d0d0c70'), squareCatalogObjectId: `SQVAR${1000 + i}`, squareItemId: `SQITEM${500 + i}`, name,
+    itemName: name.split(/ \d| —/)[0] ?? name, variationName: null, sku: `BR-${String(100 + i)}`, price, isActive: active,
+    lastSyncedAt: instant(-1, 6), createdAt: instant(-300), updatedAt: null, subscriptionUsageCount: 0,
+  }));
+  const food = products.slice(0, 11);
+  const catFood = products.slice(11, 13);
+  const extras = products.slice(13, 18);
+  const byName = (n: string) => products.find(p => p.name.startsWith(n))!;
+
+  let todayIndex = 0;
 
   PEOPLE.forEach((p, i) => {
     const id = uuid('c0ffee00');
@@ -126,7 +161,7 @@ export function createSeed(): Seed {
     }));
     pets.push(...customerPets);
 
-    customers.push({
+    const customer: CustomerDetail = {
       id, email: email(p), firstName: p.first, lastName: p.last, fullName: `${p.first} ${p.last}`,
       phoneNumber: p.phone ?? `631555${String(100 + i * 7).padStart(4, '0')}`,
       notes: p.notes ?? null,
@@ -138,7 +173,8 @@ export function createSeed(): Seed {
       isActive: p.active !== false, createdAt: created, updatedAt: null,
       pets: customerPets,
       hasAddress, isGeocoded: hasAddress && p.geocoded !== false, canReceiveLocalDelivery: hasAddress && p.geocoded !== false,
-    });
+    };
+    customers.push(customer);
 
     (p.plans ?? []).forEach((plan, k) => {
       const subId = uuid('5b5c0000');
@@ -146,47 +182,124 @@ export function createSeed(): Seed {
       const method = (plan.method ?? FulfillmentMethod.LocalDelivery) as SubscriptionListItem['fulfillmentMethod'];
       const unitName = { 1: 'day', 2: 'week', 3: 'month' }[plan.unit]!;
       const label = plan.every === 1 ? `Every ${unitName}` : `Every ${plan.every} ${unitName}s`;
+      const cycleDays = plan.unit === FrequencyUnit.Days ? plan.every : plan.unit === FrequencyUnit.Weeks ? plan.every * 7 : plan.every * 30;
       const petNames = customerPets.map(x => x.name).join(' & ');
-      const next = (i * 3 + k * 5) % 21 - 3;
+      const displayName = plan.name ?? `${petNames || p.first} — ${label.toLowerCase()}`;
+
+      // What ships each cycle. Tess Nolan's box has four lines — the delivery PAGES.md uses to explain
+      // why adjacent rows on the procurement board 409 against each other.
+      const isCat = customerPets.some(x => x.petTypeName === 'Cat');
+      const items = plan.name === 'Bakery box'
+        ? [{ productId: byName('Bakery Box').id, quantity: 1 }]
+        : p.last === 'Nolan'
+          ? [{ productId: byName('Primal Venison').id, quantity: 2 }, { productId: byName('Green Tripe').id, quantity: 1 },
+             { productId: byName('Open Farm Lamb').id, quantity: 1 }, { productId: byName('Wild Salmon Oil').id, quantity: 1 }]
+          : [{ productId: (isCat ? catFood[i % 2] : food[i % food.length])!.id, quantity: 1 },
+             ...(i % 3 === 0 || p.first === 'Kate' ? [{ productId: extras[i % extras.length]!.id, quantity: 1 + (i % 2) }] : [])];
+      subscriptionItems.set(subId, items);
+      items.forEach(it => { products.find(x => x.id === it.productId)!.subscriptionUsageCount++; });
+
+      const eligibleToday = customer.isActive && status === SubscriptionStatus.Active && (hasAddress || method !== FulfillmentMethod.LocalDelivery)
+        && todayIndex < 25 && i % 7 !== 6 && !['Emma', 'Owen'].includes(p.first);
+      const generatedToday = eligibleToday || ['Marcus', 'Kate', 'Pat', 'Frank', 'Tess'].includes(p.first) && status === SubscriptionStatus.Active;
+      // Due dates: the day's run was generated this morning, so those moved on a cycle. Two others are
+      // overdue and not yet generated; Jake's is due but he has no address; Beth's pause ends today.
+      const next = generatedToday ? cycleDays
+        : p.first === 'Jake' || p.first === 'Beth' ? 0
+        : p.first === 'Emma' || p.first === 'Owen' ? -2
+        : 1 + ((i * 3 + k) % 12);
+
       subscriptions.push({
-        id: subId, customerId: id, customerName: `${p.first} ${p.last}`, name: plan.name, displayName: plan.name ?? `${petNames || p.first} — ${label.toLowerCase()}`,
+        id: subId, customerId: id, customerName: `${p.first} ${p.last}`, name: plan.name, displayName,
         status, statusName: ['', 'NewSignUp', 'Active', 'Paused', 'Canceled'][status]!,
         frequencyInterval: plan.every, frequencyUnit: plan.unit as SubscriptionListItem['frequencyUnit'], frequencyLabel: label,
         fulfillmentMethod: method, fulfillmentMethodName: ['', 'LocalDelivery', 'Pickup', 'Shipping'][method]!,
-        nextDeliveryDate: day(next), lastDeliveryDate: day(next - plan.every * 7), signUpDate: created,
-        pausedUntil: status === SubscriptionStatus.Paused ? day(21) : null, isPauseExpired: false,
-        itemCount: 1 + (i % 3), rotationGroupCount: i % 4 === 0 ? 1 : 0, pendingAddOnCount: k === 1 ? 1 : 0, inactiveProductCount: 0,
+        nextDeliveryDate: day(next), lastDeliveryDate: day(generatedToday ? -cycleDays : next - cycleDays), signUpDate: created,
+        pausedUntil: status === SubscriptionStatus.Paused ? day(p.first === 'Beth' ? 0 : 21) : null, isPauseExpired: p.first === 'Beth',
+        itemCount: items.length, rotationGroupCount: i % 4 === 0 ? 1 : 0, pendingAddOnCount: k === 1 ? 1 : 0, inactiveProductCount: 0,
         createdAt: created, updatedAt: null, revision: 1,
       });
 
-      if (status === SubscriptionStatus.Canceled || status === SubscriptionStatus.NewSignUp) return;
-      // Three past deliveries and the next one.
-      for (let n = 3; n >= 0; n--) {
-        const when = next - n * plan.every * 7;
-        const past = when < 0;
-        const paid = past || when === 0;
-        const declined = p.last === 'Bell' && n === 0;
-        deliveries.push({
-          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: plan.name ?? label, customerId: id, customerName: `${p.first} ${p.last}`,
-          scheduledFor: day(when), completedAt: past ? instant(when, 17) : null,
-          status: (past ? DeliveryStatus.Delivered : DeliveryStatus.Scheduled) as DeliveryListItem['status'],
-          statusName: past ? 'Delivered' : 'Scheduled',
-          fulfillmentMethod: method, fulfillmentMethodName: ['', 'LocalDelivery', 'Pickup', 'Shipping'][method]!,
-          procurementStatus: (past ? ProcurementStatus.Ready : ProcurementStatus.NotStarted) as DeliveryListItem['procurementStatus'],
-          procurementStatusName: past ? 'Ready' : 'NotStarted',
-          paymentStatus: (declined ? PaymentStatus.Failed : paid ? PaymentStatus.Paid : PaymentStatus.NotCharged) as DeliveryListItem['paymentStatus'],
-          paymentStatusName: declined ? 'Failed' : paid ? 'Paid' : 'NotCharged',
-          paymentAttemptCount: paid || declined ? 1 : 0, paymentFailureCode: declined ? 'PAYMENT_METHOD_ERROR' : null,
-          paymentFailureReason: declined ? 'Card declined.' : null, paymentAttemptedAt: paid || declined ? instant(when - 1, 9) : null,
-          // Square prices from its live catalog, so what it took can differ from our snapshot estimate.
-          total: plan.total, amountCharged: paid && !declined ? (n === 2 ? Math.round((plan.total + 1.2) * 100) / 100 : plan.total) : null,
-          squareOrderId: null, squarePaymentId: null, squareReceiptUrl: null, astroCompleted: false, externalOrderId: null,
-          sentToRoutingAt: past ? instant(when, 7) : null, notes: null, failureReason: null,
-          lineCount: 2, unresolvedLineCount: past ? 0 : 2, blockedLineCount: 0, totalUnits: 2, deliveryCity: p.town,
-          createdAt: instant(when - 7), updatedAt: null, revision: 1,
-          isOneOff: false, isClosed: past, isReadyToPack: past, hasPaid: paid && !declined, contentsAreLocked: paid && !declined, paymentFailed: declined,
+      if (status === SubscriptionStatus.Canceled || status === SubscriptionStatus.NewSignUp || !customer.isActive) return;
+
+      const build = (when: number, lineStatus: (index: number) => number): DeliveryDetail => {
+        const lines = items.map((it, n) => {
+          const product = products.find(x => x.id === it.productId)!;
+          return makeLine(product, it.quantity, DeliveryLineSource.Recurring, subId, lineStatus(n));
         });
+        return recompute({
+          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: displayName, customerId: id, customerName: `${p.first} ${p.last}`,
+          scheduledFor: day(when), completedAt: null, status: DeliveryStatus.Scheduled as DeliveryDetail['status'],
+          fulfillmentMethod: method, procurementStatus: 1 as DeliveryDetail['procurementStatus'],
+          paymentStatus: PaymentStatus.NotCharged as DeliveryDetail['paymentStatus'], paymentAttemptCount: 0,
+          paymentFailureCode: null, paymentFailureReason: null, paymentAttemptedAt: null,
+          squareOrderId: null, squarePaymentId: null, squareReceiptUrl: null, amountCharged: null, astroCompleted: false,
+          externalOrderId: null, sentToRoutingAt: null, notes: null, failureReason: null,
+          createdAt: instant(when - 2, 6), updatedAt: null, revision: 1,
+          lines, discounts: [], photos: [], driverNotes: null, customerNotifiedAt: null, customerHasBeenNotified: false, hasProofOfDelivery: false,
+          deliveryStreet: customer.street ?? '', deliveryCity: customer.city ?? '', deliveryState: customer.state ?? '', deliveryZipCode: customer.zipCode ?? '',
+          deliveryLatitude: customer.latitude, deliveryLongitude: customer.longitude,
+          requestedWindowStart: customer.preferredWindowStart, requestedWindowEnd: customer.preferredWindowEnd, serviceDurationMinutesOverride: null,
+          customerPhoneNumber: customer.phoneNumber, accessNotes: customer.accessNotes, serviceDurationMinutes: customer.serviceDurationMinutes,
+          // derived — filled by recompute()
+          totalUnits: 0, total: 0, unresolvedLines: [], chargeVariance: null, needsRefundAttention: false, packingBlockers: [], effectiveServiceDurationMinutes: 0,
+          statusName: null, fulfillmentMethodName: null, procurementStatusName: null, paymentStatusName: null,
+          isOneOff: false, isClosed: false, isReadyToPack: false, hasPaid: false, contentsAreLocked: false, paymentFailed: false,
+        });
+      };
+
+      // History: three delivered, paid cycles. One charge differs from our estimate — Square prices
+      // from its live catalog — and the most recent carries proof-of-delivery photos.
+      for (let n = 3; n >= 1; n--) {
+        const d = build(-n * cycleDays, () => LineOrderStatus.Received);
+        Object.assign(d, {
+          status: DeliveryStatus.Delivered, completedAt: instant(-n * cycleDays, 16), sentToRoutingAt: instant(-n * cycleDays, 7),
+          paymentStatus: PaymentStatus.Paid, paymentAttemptCount: 1, paymentAttemptedAt: instant(-n * cycleDays - 1, 9),
+          squarePaymentId: `PAY${i}${k}${n}`, squareReceiptUrl: 'https://squareup.com/receipt/preview/example',
+          customerHasBeenNotified: true, customerNotifiedAt: instant(-n * cycleDays, 17),
+        });
+        recompute(d);
+        d.amountCharged = n === 2 ? Math.round((d.total + 1.2) * 100) / 100 : d.total;
+        if (n === 1) {
+          d.hasProofOfDelivery = true;
+          d.driverNotes = 'Left at the side door.';
+          d.photos = [{ routificPhotoUuid: `photo-${i}-${k}`, routificOrderUuid: `order-${i}-${k}`, createdAt: instant(-cycleDays, 16) }];
+        }
+        recompute(d);
+        deliveries.push(d);
       }
+
+      if (!generatedToday) return;
+      const state: TodayState = p.first === 'Tess' ? 'inProgress'
+        : ['Marcus', 'Kate', 'Pat', 'Frank'].includes(p.first) ? 'ready'
+        : TODAY_PATTERN[todayIndex % TODAY_PATTERN.length]!;
+      todayIndex++;
+      const d = build(0, n => {
+        switch (state) {
+          case 'notStarted': return LineOrderStatus.Pending;
+          case 'inProgress': return n === 0 ? LineOrderStatus.Ordered : LineOrderStatus.Pending;
+          case 'partial': return n === 0 ? LineOrderStatus.PartiallyReceived : LineOrderStatus.Ordered;
+          case 'blocked': return n === 0 ? LineOrderStatus.OutOfStock : LineOrderStatus.Ordered;
+          default: return LineOrderStatus.Received;
+        }
+      });
+      const first = d.lines[0]!;
+      if (state === 'inProgress') first.statusNote = 'PO 4471';
+      if (state === 'blocked') first.statusNote = 'Supplier out until next week.';
+      if (state === 'partial') { first.quantity = 3; first.quantityReceived = 1; first.statusNote = '1 of 3 arrived.'; }
+      if (state === 'packed') d.status = DeliveryStatus.Packed as DeliveryDetail['status'];
+
+      // Billing states: Marcus's card declined; Kate paid but a line was shorted afterwards (refund owed);
+      // Pat's charge came in above our estimate; Frank paid, so his contents are locked.
+      if (p.first === 'Marcus') Object.assign(d, { paymentStatus: PaymentStatus.Failed, paymentAttemptCount: 1, paymentAttemptedAt: instant(-1, 9), paymentFailureCode: 'PAYMENT_METHOD_ERROR', paymentFailureReason: 'Card declined.' });
+      if (p.first === 'Kate' || p.first === 'Pat' || p.first === 'Frank') {
+        Object.assign(d, { paymentStatus: PaymentStatus.Paid, paymentAttemptCount: 1, paymentAttemptedAt: instant(-1, 9), squarePaymentId: `PAYT${i}` });
+      }
+      if (p.first === 'Kate') { d.status = DeliveryStatus.Packed as DeliveryDetail['status']; d.lines[d.lines.length - 1]!.orderStatus = LineOrderStatus.Shorted as DeliveryDetail['lines'][number]['orderStatus']; }
+      recompute(d);
+      if (d.hasPaid) d.amountCharged = p.first === 'Pat' ? Math.round((d.total + 2.35) * 100) / 100 : p.first === 'Kate' ? Math.round((d.total + d.lines[d.lines.length - 1]!.unitPrice) * 100) / 100 : d.total;
+      recompute(d);
+      deliveries.push(d);
     });
   });
 
@@ -200,5 +313,5 @@ export function createSeed(): Seed {
     { squareCustomerId: 'SQ7003', firstName: 'Robert', lastName: 'Hale', email: 'rob.hale@example.com', phoneNumber: null },
   ];
 
-  return { customers, pets, subscriptions, deliveries, squareDirectory };
+  return { customers, pets, subscriptions, subscriptionItems, products, deliveries, squareDirectory };
 }

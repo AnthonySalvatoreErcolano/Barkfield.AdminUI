@@ -37,3 +37,12 @@ it('formats US phone numbers and leaves anything else alone', () => {
   expect(formatPhone('+1 631 555 0142')).toBe('(631) 555-0142');
   expect(formatPhone('ext 12')).toBe('ext 12');
 });
+
+describe('date-only helpers', () => {
+  it('adds days across month ends without drifting', async () => {
+    const { addDays, toApiDay } = await import('./dates');
+    expect(addDays('2026-09-29', 3)).toBe('2026-10-02');
+    expect(addDays('2026-03-08', 1)).toBe('2026-03-09'); // US DST change
+    expect(toApiDay('2026-09-29')).toBe('2026-09-29T00:00:00Z');
+  });
+});

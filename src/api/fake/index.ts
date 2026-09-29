@@ -8,18 +8,21 @@ import { PERMISSIONS, type Permission } from '../generated/permissions';
 import { RateLimitError, SignInError, ValidationError } from '../errors';
 import type { Api, UserDetail } from '../ports';
 import { createFakeCustomers } from './customers';
+import { createFakeDeliveries, createFakeProducts } from './deliveries';
 import { createSeed, type Seed } from './seed';
 
 /** The fake's sign-in password, for every seeded account. Shown on the login screen in fake mode. */
 export const FAKE_PASSWORD = 'barkfield-dev';
 
-// The live Staff role as the dev database holds it (read from /api/users/me, 2026-09-29). Note it has
-// no billing:* and no delivery:manage, although API-CONTEXT §3 says staff hold billing:charge — raised
-// with the API side. Role contents are data, so the fake follows the database, not the prose.
+// The live Staff role as the dev database holds it (read from /api/users/me, 2026-09-29). Staff pack
+// and charge, but do not manage deliveries (cancel, change windows, mark delivered by hand), push the
+// day to Routific, delete customers, or manage users and the catalog. Role contents are data, so the
+// fake follows the database.
 const STAFF_PERMISSIONS: Permission[] = [
   'customer:view', 'customer:create', 'customer:edit',
   'subscription:view', 'subscription:manage',
   'delivery:view', 'delivery:pack',
+  'billing:view', 'billing:charge',
   'dispatch:view',
   'product:view',
 ];
@@ -140,6 +143,8 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
       },
     },
     customers: createFakeCustomers(db, wait),
+    deliveries: createFakeDeliveries(db, wait),
+    products: createFakeProducts(db, wait),
     fake: {
       db,
       expireSession() {

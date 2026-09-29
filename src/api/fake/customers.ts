@@ -9,6 +9,7 @@ import { SubscriptionStatus } from '../generated/enums';
 import { ConflictError, NotFoundError, OutageError, ValidationError } from '../errors';
 import type { CustomerDetail, CustomerListItem, CustomersPort } from '../ports';
 import type { Seed } from './seed';
+import { toDeliveryListItem } from './deliveryModel';
 
 export function createFakeCustomers(db: Seed, wait: () => Promise<void>): CustomersPort {
   const conflictPending = new Set(db.customers.filter(c => c.lastName === 'Whitaker').map(c => c.id));
@@ -196,7 +197,7 @@ export function createFakeCustomers(db: Seed, wait: () => Promise<void>): Custom
       const rows = db.deliveries.filter(d => d.customerId === id).sort((a, b) => b.scheduledFor.localeCompare(a.scheduledFor));
       const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
       return {
-        items: structuredClone(rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)),
+        items: rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map(d => toDeliveryListItem(structuredClone(d))),
         totalCount: rows.length, pageNumber, pageSize, totalPages, hasNextPage: pageNumber < totalPages, hasPreviousPage: pageNumber > 1,
       };
     },
