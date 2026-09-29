@@ -69,7 +69,7 @@ any call → 401
       → anything else              → clear state, go to the login screen
 ```
 
-**Two hard rules, both of which will bite if ignored:**
+**Three hard rules, all of which will bite if ignored:**
 
 1. **Retry once, never in a loop.** A second 401 after a fresh token means something other than
    expiry.
@@ -77,6 +77,18 @@ any call → 401
    refresh promise, not fire five. The API rotates the refresh token on every use and treats a
    token that has already been rotated away as theft — **it revokes every session for that user.**
    A refresh race will log the user out and look like a random bug.
+3. **Never abort the refresh.** `POST /api/auth/refresh-token` rotates the token and revokes the old
+   one **before the response is written**. A client that aborts it — an `AbortController`, a timeout,
+   an unmount — can be left holding a revoked cookie; its next refresh is then treated as token reuse
+   and every session for that user is revoked. Send it with no abort signal. A caller that cannot
+   wait should stop waiting, not cancel the request, and must not start another refresh while one is
+   still running.
+
+⚠️ **Some aborts cannot be prevented from the client.** If a user reloads or closes the tab while a
+refresh is in flight, the browser cancels it and no client code can stop that. Today that leaves the
+session dead. Whether the API should tolerate it — by letting a just-rotated token be presented again
+for a few seconds and returning the same new token rather than treating it as theft — is an open
+question with the API side. Until it changes, treat an unexplained sign-out after a reload as this.
 
 `POST /api/auth/logout` clears the cookie server-side. Call it; do not just drop the token.
 
