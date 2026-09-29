@@ -1,0 +1,8 @@
+/* Webfonts. Brand titles = Brother 1816 (not yet supplied) → TEMPORARY placeholder: Montserrat. Body = Zilla Slab.
+   To swap: add Brother 1816 @font-face rules here and change --font-display in typography.css. */
+@font-face{font-family:"Montserrat";font-style:normal;font-weight:400 900;font-display:swap;src:url("../fonts/Montserrat-Variable.woff2") format("woff2");}
+@font-face{font-family:"Zilla Slab";font-style:italic;font-weight:400;font-display:swap;src:url("../fonts/ZillaSlab-400i.woff2") format("woff2");}
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:400;font-display:swap;src:url("../fonts/ZillaSlab-400.woff2") format("woff2");}
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:500;font-display:swap;src:url("../fonts/ZillaSlab-500.woff2") format("woff2");}
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:600;font-display:swap;src:url("../fonts/ZillaSlab-600.woff2") format("woff2");}
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:700;font-display:swap;src:url("../fonts/ZillaSlab-700.woff2") format("woff2");}

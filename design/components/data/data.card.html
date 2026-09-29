@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="900x420" name="Data — Table & pagination" subtitle="DataTable with selection, sorting, badges; Pagination" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Data</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--bg-app);padding:20px 24px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:78px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.BarkfieldRoadDesignSystem_ed681c;
+const { DataTable, Pagination, Badge, Chip, IconButton, Card } = NS;
+const rows=[
+{id:1,name:'Daniella Russo',pup:'Biscuit',plan:'Open Farm Lamb · 24 lb',freq:'Every 4 wks',next:'Oct 02',status:'Active',total:89.99},
+{id:2,name:'Marcus Bell',pup:'Juniper',plan:'Raw Bistro Beef · 12 lb',freq:'Every 2 wks',next:'Oct 03',status:'Past due',total:64.50},
+{id:3,name:'Priya Shah',pup:'Mochi',plan:'Bakery Box · Large',freq:'Every 6 wks',next:'—',status:'Paused',total:38.00},
+{id:4,name:'Tom Kearney',pup:'Rufus',plan:'Stella & Chewy · 24 lb',freq:'Every 4 wks',next:'Oct 06',status:'Active',total:112.40}];
+const tone={Active:'success','Past due':'danger',Paused:'warning'};
+function Demo(){const [sel,setSel]=React.useState([2]);const [sort,setSort]=React.useState({key:'next',dir:'asc'});const [p,setP]=React.useState(1);
+return (<Card flush title="Subscriptions" actions={<Chip size="sm" icon="filter">Route A–C</Chip>}>
+<DataTable selectable selected={sel} onSelectChange={setSel} sort={sort} onSortChange={setSort} rows={rows} columns={[
+{key:'name',header:'Customer',sortable:true,render:r=><div><div style={{fontWeight:600}}>{r.name}</div><div style={{fontSize:13,color:'var(--text-muted)'}}>{r.pup}</div></div>},
+{key:'plan',header:'Plan'},{key:'freq',header:'Frequency'},{key:'next',header:'Next',sortable:true},
+{key:'status',header:'Status',render:r=><Badge tone={tone[r.status]} dot>{r.status}</Badge>},
+{key:'total',header:'Total',align:'right',render:r=>'$'+r.total.toFixed(2)},
+{key:'a',header:'',width:44,render:()=><IconButton icon="ellipsis" label="Actions" size="sm" />}]} />
+<div style={{borderTop:'1px solid var(--border-subtle)'}}><Pagination page={p} pageCount={52} total={1284} pageSize={25} onChange={setP} /></div>
+</Card>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

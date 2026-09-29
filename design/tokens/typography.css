@@ -1,0 +1,19 @@
+/* Typography. Titles: Brother 1816 (Black/Bold) — Montserrat is a TEMPORARY placeholder until font files arrive. Body: Zilla Slab Regular.
+   Brand rule: display caps tracked +10 (0.01em) — never tighter, never airy. */
+:root{
+--font-display:"Montserrat",system-ui,sans-serif; /* swap to "Brother 1816" when licensed files are added */
+--font-body:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-ui:var(--font-display);
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;--weight-black:900;
+--tracking-display:0.01em;--tracking-label:0.06em;--tracking-body:0;
+--text-display:44px;--text-h1:32px;--text-h2:24px;--text-h3:19px;--text-h4:16px;
+--text-body-lg:17px;--text-body:15px;--text-body-sm:14px;--text-caption:13px;--text-label:12px;--text-micro:11px;
+--leading-tight:1.1;--leading-snug:1.25;--leading-body:1.5;
+/* semantic roles */
+--type-display:var(--weight-black) var(--text-display)/var(--leading-tight) var(--font-display);
+--type-h1:var(--weight-black) var(--text-h1)/var(--leading-tight) var(--font-display);
+--type-h2:var(--weight-bold) var(--text-h2)/var(--leading-snug) var(--font-display);
+--type-h3:var(--weight-bold) var(--text-h3)/var(--leading-snug) var(--font-display);
+--type-body:var(--weight-regular) var(--text-body)/var(--leading-body) var(--font-body);
+--type-label:var(--weight-bold) var(--text-label)/1 var(--font-display);
+}

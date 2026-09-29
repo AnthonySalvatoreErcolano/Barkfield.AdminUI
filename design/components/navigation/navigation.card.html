@@ -1,0 +1,25 @@
+<!-- @dsCard group="Components" viewport="700x520" name="Navigation" subtitle="Light SidebarNav, Tabs (line + pill), Breadcrumbs" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Navigation</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--bg-app);padding:20px 24px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:78px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.BarkfieldRoadDesignSystem_ed681c;
+const { SidebarNav, Tabs, Breadcrumbs } = NS;
+function Demo(){const [a,setA]=React.useState('subs');const [t,setT]=React.useState('overview');const [v,setV]=React.useState('week');
+return (<div style={{display:'flex',gap:24,height:480,margin:'-20px -24px',}}>
+<SidebarNav logoSrc="../../assets/logos/logo.svg" productName="Autoship Admin" active={a} onSelect={setA} sections={[
+{items:[{id:'dash',label:'Dashboard',icon:'layout-dashboard'},{id:'subs',label:'Subscriptions',icon:'repeat',badge:12},{id:'sched',label:'Delivery schedule',icon:'calendar-days'},{id:'cust',label:'Customers',icon:'users'}]},
+{title:'Catalog',items:[{id:'prod',label:'Products',icon:'package'},{id:'routes',label:'Routes',icon:'route'}]}]}
+footer={<div style={{fontFamily:'var(--font-body)',fontSize:13,color:'var(--text-secondary)'}}>Kevin N. · Owner</div>} />
+<div className="col" style={{paddingTop:28,gap:26,flex:1,paddingRight:24}}>
+<Breadcrumbs items={[{label:'Customers',onClick:()=>{}},{label:'Daniella Russo'}]} />
+<Tabs value={t} onChange={setT} tabs={[{id:'overview',label:'Overview'},{id:'orders',label:'Orders',count:14},{id:'pups',label:'Pups',count:2},{id:'notes',label:'Notes'}]} />
+<Tabs variant="pill" value={v} onChange={setV} tabs={[{id:'day',label:'Day'},{id:'week',label:'Week'},{id:'list',label:'List'}]} />
+</div></div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Components" viewport="700x440" name="Forms" subtitle="Input, Select, Textarea, Checkbox, Radio, Switch" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Forms</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--bg-app);padding:20px 24px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:78px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.BarkfieldRoadDesignSystem_ed681c;
+const { Input, Select, Textarea, Checkbox, Radio, Switch } = NS;
+function Demo(){const [c,setC]=React.useState(true);const [r,setR]=React.useState('skip');const [s,setS]=React.useState(true);
+return (<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'18px 24px'}}>
+<Input label="Customer email" placeholder="daniella@example.com" hint="Used for delivery reminders" />
+<Select label="Deliver every" defaultValue="4" options={[{value:'2',label:'2 weeks'},{value:'4',label:'4 weeks'},{value:'6',label:'6 weeks'}]} />
+<Input iconLeft="search" placeholder="Search customers, pups, orders…" />
+<Input label="Bag size" defaultValue="26" suffix="lbs" error="Only 4, 12 or 24 lb bags available" />
+<Textarea label="Delivery notes" rows={2} placeholder="Side gate code, leave in cooler…" style={{gridColumn:"span 2"}} />
+<div className="col" style={{gap:10}}><Checkbox label="Text reminder 2 days before" checked={c} onChange={setC} /><Checkbox label="Leave at door" description="Customer note: side gate" /><Checkbox label="Disabled" disabled /></div>
+<div className="col" style={{gap:10}}>{[['skip','Skip next delivery'],['pause','Pause for 1 month'],['cancel','Cancel autoship']].map(([v,l])=><Radio key={v} name="h" value={v} label={l} checked={r===v} onChange={setR} />)}<Switch label="Autoship active" checked={s} onChange={setS} /></div>
+</div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

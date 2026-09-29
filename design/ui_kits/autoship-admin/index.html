@@ -1,0 +1,40 @@
+<!-- @dsCard group="Autoship Admin" viewport="1440x900" name="Autoship Admin portal" subtitle="Dashboard → Subscriptions → Customer detail → Schedule (click-through)" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Barkfield Road — Autoship Admin</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="data.js"></script>
+<style>body{margin:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="Shell.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="Subscriptions.jsx"></script>
+<script type="text/babel" src="CustomerDetail.jsx"></script>
+<script type="text/babel" src="Schedule.jsx"></script>
+<script type="text/babel">
+const { Toast, Card } = window.BarkfieldRoadDesignSystem_ed681c;
+function App() {
+  const [page, setPage] = React.useState(() => localStorage.getItem('br-admin-page') || 'dashboard');
+  const [sub, setSub] = React.useState(null);
+  const [toasts, setToasts] = React.useState([]);
+  React.useEffect(() => { localStorage.setItem('br-admin-page', page); }, [page]);
+  const toast = (title, message) => { const id = Date.now(); setToasts(t => t.concat([{ id, title, message }])); setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4500); };
+  const nav = p => { setSub(null); setPage(p === 'customers' ? 'subscriptions' : p); };
+  const open = s => { setSub(s); setPage('subscriptions'); };
+  let body;
+  if (sub) body = <CustomerDetail key={sub.id} sub={sub} onBack={() => setSub(null)} toast={toast} />;
+  else if (page === 'dashboard') body = <Dashboard onOpen={open} onNav={nav} />;
+  else if (page === 'subscriptions') body = <Subscriptions onOpen={open} toast={toast} />;
+  else if (page === 'schedule') body = <Schedule toast={toast} />;
+  else body = <div><PageHeader title={page} /><Card><div style={{ color: 'var(--text-muted)' }}>This area isn’t part of the UI kit yet.</div></Card></div>;
+  return (
+    <AdminShell page={page} onNav={nav} onNew={() => toast('New autoship', 'The create flow isn’t part of this kit yet.')}>
+      {body}
+      <div className="br-toast-stack">{toasts.map(t => <Toast key={t.id} tone="success" title={t.title} message={t.message} onClose={() => setToasts(x => x.filter(y => y.id !== t.id))} />)}</div>
+    </AdminShell>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

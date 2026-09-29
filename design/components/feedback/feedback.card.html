@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x380" name="Feedback" subtitle="Alert tones, Toast, Tooltip" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Feedback</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--bg-app);padding:20px 24px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:78px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.BarkfieldRoadDesignSystem_ed681c;
+const { Alert, Toast, Tooltip, Button, IconButton } = NS;
+function Demo(){return (<div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr',gap:16}}>
+<div className="col" style={{gap:10}}>
+<Alert tone="danger" title="Card declined" action={<Button size="sm" variant="secondary">Send link</Button>}>Visa •• 4242 declined Sep 26.</Alert>
+<Alert tone="warning" title="Route cutoff at 3 PM">Changes after cutoff ship next cycle.</Alert>
+<Alert tone="success" onClose={()=>{}}>12 subscriptions moved to Route B.</Alert>
+<Alert tone="info">New Bakery Box launches Oct 14.</Alert>
+</div>
+<div className="col" style={{gap:16,alignItems:'flex-start'}}>
+<Toast tone="success" title="Next delivery skipped" message="Biscuit's box moves to Oct 30." actionLabel="Undo" onClose={()=>{}} style={{width:'100%'}} />
+<Toast tone="danger" title="Couldn't reach Stripe" message="Retrying in 30 seconds." style={{width:'100%'}} />
+<div style={{paddingTop:44,paddingLeft:60}}><Tooltip open content="Skip next delivery"><IconButton icon="skip-forward" label="Skip" variant="secondary" /></Tooltip></div>
+</div></div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

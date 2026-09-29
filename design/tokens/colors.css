@@ -1,0 +1,34 @@
+/* Barkfield Road — color tokens.
+   Brand core (brand book p.27): Teal #007167 · Terracotta #C76C61 · Tan #C09473 · Cream #F2DAB2.
+   Scales + neutrals are derived for UI use; the four brand values sit at the marked stops. */
+:root{
+--teal-50:#E6F2F0;--teal-100:#CCE5E1;--teal-200:#99CBC4;--teal-300:#5FAEA4;--teal-400:#2A8F84;--teal-500:#007167;--teal-600:#005F57;--teal-700:#004C45;--teal-800:#003A35;--teal-900:#002824;
+--terracotta-50:#FAEEEC;--terracotta-100:#F4DAD6;--terracotta-200:#E8B5AE;--terracotta-300:#DB9288;--terracotta-400:#D07F75;--terracotta-500:#C76C61;--terracotta-600:#AF5549;--terracotta-700:#8F4339;--terracotta-800:#6E332B;--terracotta-900:#4E241E;
+--tan-50:#F8F1EB;--tan-100:#EFE2D6;--tan-200:#E0C7B1;--tan-300:#D2AD8F;--tan-500:#C09473;--tan-600:#A57A5A;--tan-700:#856146;--tan-800:#644834;
+--cream-50:#FDF9F2;--cream-100:#FAF0DF;--cream-200:#F6E6CB;--cream-300:#F2DAB2;--cream-400:#E9C992;--cream-500:#DDB574;
+--ink-900:#1C2624;--ink-800:#2C3634;--ink-700:#414B48;--ink-600:#5A625F;--ink-500:#767C78;--ink-400:#9A9D98;--ink-300:#C4C2BA;--ink-200:#E3DDD1;--ink-100:#EFEAE0;--ink-50:#F8F5EF;--white:#FFFFFF;
+--green-50:#E7F2EA;--green-100:#CFE5D6;--green-500:#3D8A5A;--green-700:#2A6340;
+--amber-50:#FBF1DE;--amber-100:#F5E0B8;--amber-500:#C98A2B;--amber-700:#8A5A12;
+
+/* brand aliases */
+--brand-teal:var(--teal-500);--brand-terracotta:var(--terracotta-500);--brand-tan:var(--tan-500);--brand-cream:var(--cream-300);
+
+/* surfaces */
+--bg-app:#FAF5EC;--surface-card:var(--white);--surface-raised:var(--white);--surface-sunken:#F4EDE1;--surface-hover:#F6F0E6;--surface-selected:var(--teal-50);
+--surface-brand:var(--teal-500);--surface-brand-strong:var(--teal-700);--surface-cream:var(--cream-300);--surface-overlay:rgba(28,38,36,.48);
+/* text */
+--text-primary:var(--ink-900);--text-secondary:var(--ink-600);--text-muted:var(--ink-500);--text-disabled:var(--ink-400);
+--text-brand:var(--teal-500);--text-accent:var(--terracotta-600);--text-on-brand:var(--cream-300);--text-on-brand-muted:#BFD9D4;--text-inverse:var(--white);--text-link:var(--teal-500);--text-link-hover:var(--teal-700);
+/* borders */
+--border-subtle:#EFE7DA;--border-default:#E4D9C6;--border-strong:#CDBEA6;--border-focus:var(--teal-400);--border-brand:var(--teal-500);
+/* interactive */
+--action-primary:var(--teal-500);--action-primary-hover:var(--teal-600);--action-primary-press:var(--teal-700);
+--action-accent:var(--terracotta-500);--action-accent-hover:var(--terracotta-600);--action-accent-press:var(--terracotta-700);
+--focus-ring:0 0 0 3px rgba(42,143,132,.32);
+/* semantic status */
+--status-success-fg:var(--green-700);--status-success-bg:var(--green-50);--status-success-solid:var(--green-500);
+--status-warning-fg:var(--amber-700);--status-warning-bg:var(--amber-50);--status-warning-solid:var(--amber-500);
+--status-danger-fg:var(--terracotta-700);--status-danger-bg:var(--terracotta-50);--status-danger-solid:var(--terracotta-600);
+--status-info-fg:var(--teal-700);--status-info-bg:var(--teal-50);--status-info-solid:var(--teal-500);
+--status-neutral-fg:var(--ink-700);--status-neutral-bg:var(--ink-100);--status-neutral-solid:var(--ink-500);
+}

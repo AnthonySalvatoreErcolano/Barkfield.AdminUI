@@ -1,0 +1,7 @@
+/* Minimal element defaults */
+html,body{margin:0;background:var(--bg-app);color:var(--text-primary);font:var(--type-body);-webkit-font-smoothing:antialiased}
+*,*::before,*::after{box-sizing:border-box}
+a{color:var(--text-link);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{color:var(--text-link-hover)}
+h1,h2,h3,h4{font-family:var(--font-display);letter-spacing:var(--tracking-display);margin:0}
+::selection{background:var(--cream-300);color:var(--ink-900)}

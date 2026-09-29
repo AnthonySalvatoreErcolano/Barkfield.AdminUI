@@ -1,0 +1,24 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Display — Badges, chips, cards" subtitle="Badge tones, Chip filters & tags, Card tones, StatCard" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Display</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--bg-app);padding:20px 24px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:78px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.BarkfieldRoadDesignSystem_ed681c;
+const { Badge, Chip, Card, StatCard, Button } = NS;
+function Demo(){const [f,setF]=React.useState('all');
+return (<div className="col">
+<div className="row"><span className="lbl">Badge</span><Badge tone="success" dot>Active</Badge><Badge tone="warning" dot>Paused</Badge><Badge tone="danger" dot>Past due</Badge><Badge tone="info">Scheduled</Badge><Badge tone="neutral">Cancelled</Badge><Badge tone="brand">Bakery</Badge><Badge tone="danger" variant="solid">Failed</Badge></div>
+<div className="row"><span className="lbl">Chip</span>{[['all','All',1284],['active','Active',1102],['paused','Paused',96],['due','Past due',12]].map(([id,l,n])=><Chip key={id} selected={f===id} onClick={()=>setF(id)} count={n}>{l}</Chip>)}</div>
+<div className="row"><span className="lbl">Tag</span><Chip variant="tag" icon="dog" size="sm">Golden Retriever</Chip><Chip variant="tag" size="sm">Grain-free</Chip><Chip variant="tag" size="sm" onRemove={()=>{}}>Chicken allergy</Chip></div>
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+<StatCard label="Active autoships" value="1,284" delta="+38" trend="up" caption="this month" icon="repeat" />
+<Card eyebrow="Next delivery" title="Thu, Oct 2" actions={<Badge tone="info">Route B</Badge>}><div style={{fontSize:14,color:'var(--text-secondary)'}}>Biscuit · 24 lb Open Farm Lamb</div></Card>
+<Card tone="brand" eyebrow="Today" title="42 drop-offs"><Button variant="cream" size="sm">View route</Button></Card>
+</div></div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

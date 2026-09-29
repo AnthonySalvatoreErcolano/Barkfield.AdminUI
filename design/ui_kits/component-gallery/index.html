@@ -1,0 +1,263 @@
+<!-- @dsCard group="Component Gallery" viewport="1280x900" name="All web UI components" subtitle="Every component and state on one page: buttons, forms, dropdowns, chips, badges, cards, tables, nav, feedback, dialogs" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Barkfield Road — Component Gallery</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--bg-app)}
+.gal-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:24px;padding:14px 40px;background:var(--surface-card);border-bottom:1px solid var(--border-default)}
+.gal-top img{width:132px;display:block}
+.gal-top nav{display:flex;flex-wrap:wrap;gap:4px 16px}
+.gal-top nav a{font:600 12.5px/1 var(--font-display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-600);text-decoration:none;padding:6px 0}
+.gal-top nav a:hover{color:var(--teal-500)}
+.gal{max-width:1200px;margin:0 auto;padding:32px 40px 80px;display:flex;flex-direction:column;gap:40px}
+.gal-sec{display:flex;flex-direction:column;gap:16px;scroll-margin-top:80px}
+.gal-sec>h2{font:900 22px/1.1 var(--font-display);letter-spacing:.01em;text-transform:uppercase;color:var(--teal-500)}
+.gal-sec>p{margin:-8px 0 0;color:var(--text-muted);font-size:14.5px}
+.gal-panel{background:var(--surface-card);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:22px 24px;display:flex;flex-direction:column;gap:18px}
+.gal-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.gal-lbl{font:700 10.5px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);width:96px;flex-shrink:0}
+.gal-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px}
+.gal-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.gal-grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.gal-col{display:flex;flex-direction:column;gap:12px}
+@media (max-width:900px){.gal-grid2,.gal-grid3,.gal-grid4{grid-template-columns:1fr}.gal{padding:24px 20px}}
+</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Icon, Input, Select, Textarea, Checkbox, Radio, Switch, Badge, Chip, Card, StatCard, DataTable, Pagination, Tabs, Breadcrumbs, SidebarNav, Alert, Toast, Tooltip, Dialog, DropdownMenu } = window.BarkfieldRoadDesignSystem_ed681c;
+
+const ROWS = [
+  { id: 1042, name: 'Daniella Russo', town: 'East Northport', pup: 'Biscuit', tag: 'Grain-free', plan: 'Open Farm Lamb & Oat', size: '24 lb', freq: 4, next: 'Oct 02', status: 'Active', total: 89.99 },
+  { id: 1043, name: 'Marcus Bell', town: 'Huntington', pup: 'Juniper', tag: 'Raw', plan: 'Raw Bistro Beef', size: '12 lb', freq: 2, next: 'Oct 03', status: 'Past due', total: 64.5 },
+  { id: 1047, name: 'Priya Shah', town: 'Syosset', pup: 'Mochi', tag: 'Bakery', plan: 'Bakery Box — Large', size: '1 box', freq: 6, next: '—', status: 'Paused', total: 38 },
+  { id: 1051, name: 'Tom Kearney', town: 'Northport', pup: 'Rufus', tag: 'Senior', plan: 'Stella & Chewy’s Chicken', size: '24 lb', freq: 4, next: 'Oct 06', status: 'Active', total: 112.4 },
+  { id: 1064, name: 'Sam Whitaker', town: 'Kings Park', pup: 'Bear', tag: 'Raw', plan: 'Raw Bistro Lamb', size: '24 lb', freq: 2, next: '—', status: 'Cancelled', total: 0 }
+];
+const TONE = { Active: 'success', 'Past due': 'danger', Paused: 'warning', Cancelled: 'neutral' };
+const SECTIONS = [['buttons', 'Buttons'], ['forms', 'Forms'], ['dropdowns', 'Dropdowns'], ['chips', 'Chips & badges'], ['cards', 'Cards'], ['tables', 'Tables'], ['nav', 'Navigation'], ['feedback', 'Feedback'], ['dialogs', 'Dialogs']];
+
+function Sec({ id, title, desc, children }) {
+  return <section id={id} className="gal-sec"><h2>{title}</h2>{desc ? <p>{desc}</p> : null}{children}</section>;
+}
+
+function RowMenu({ r }) {
+  return <DropdownMenu align="right" trigger={<IconButton icon="ellipsis" label="Actions" size="sm" />} items={[
+    { label: 'View customer', icon: 'eye' }, { label: 'Edit plan', icon: 'pencil' }, { label: 'Skip next delivery', icon: 'skip-forward' },
+    { label: r.status === 'Paused' ? 'Resume' : 'Pause', icon: r.status === 'Paused' ? 'play' : 'pause' }, { divider: true }, { label: 'Cancel autoship', icon: 'trash-2', danger: true }]} />;
+}
+
+function Gallery() {
+  const [chk, setChk] = React.useState(true);
+  const [radio, setRadio] = React.useState('4');
+  const [sw1, setSw1] = React.useState(true);
+  const [sw2, setSw2] = React.useState(false);
+  const [filter, setFilter] = React.useState('all');
+  const [tags, setTags] = React.useState(['Grain-free', 'Chicken allergy', 'Senior']);
+  const [sel, setSel] = React.useState([1043]);
+  const [sort, setSort] = React.useState({ key: 'name', dir: 'asc' });
+  const [page, setPage] = React.useState(1);
+  const [tab, setTab] = React.useState('overview');
+  const [pill, setPill] = React.useState('week');
+  const [nav, setNav] = React.useState('subs');
+  const [sortBy, setSortBy] = React.useState('Next delivery');
+  const [dlg, setDlg] = React.useState(null);
+  const [toasts, setToasts] = React.useState([]);
+  const toast = (tone, title, message) => { const id = Date.now(); setToasts(t => t.concat([{ id, tone, title, message }])); setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4000); };
+
+  const counts = { all: ROWS.length }; ROWS.forEach(r => counts[r.status] = (counts[r.status] || 0) + 1);
+  let rows = filter === 'all' ? ROWS : ROWS.filter(r => r.status === filter);
+  rows = rows.slice().sort((a, b) => { const x = a[sort.key], y = b[sort.key]; return (x > y ? 1 : x < y ? -1 : 0) * (sort.dir === 'asc' ? 1 : -1); });
+
+  return (
+    <div>
+      <div className="gal-top">
+        <img src="../../assets/logos/logo.svg" alt="Barkfield Road" />
+        <nav>{SECTIONS.map(([id, l]) => <a key={id} href={'#' + id}>{l}</a>)}</nav>
+      </div>
+      <div className="gal">
+
+        <Sec id="buttons" title="Buttons" desc="Button · IconButton · Icon">
+          <div className="gal-panel">
+            <div className="gal-row"><span className="gal-lbl">Variants</span><Button>Save changes</Button><Button variant="accent" iconLeft="plus">New autoship</Button><Button variant="secondary" iconLeft="download">Export</Button><Button variant="ghost">Cancel</Button><Button variant="danger" iconLeft="trash-2">Cancel autoship</Button></div>
+            <div className="gal-row"><span className="gal-lbl">Sizes</span><Button size="sm">Small</Button><Button size="md">Medium</Button><Button size="lg">Large</Button><Button variant="secondary" size="sm" iconRight="chevron-down">With chevron</Button></div>
+            <div className="gal-row"><span className="gal-lbl">Disabled</span><Button disabled>Primary</Button><Button variant="secondary" disabled>Secondary</Button><Button variant="ghost" disabled>Ghost</Button></div>
+            <div className="gal-row"><span className="gal-lbl">Full width</span><div style={{ width: 320 }}><Button fullWidth iconLeft="check">Confirm delivery</Button></div></div>
+            <div className="gal-row"><span className="gal-lbl">Icon buttons</span><IconButton icon="pencil" label="Edit" /><IconButton icon="skip-forward" label="Skip" variant="secondary" /><IconButton icon="plus" label="Add" variant="primary" /><IconButton icon="ellipsis" label="More" size="sm" /><IconButton icon="trash-2" label="Delete" variant="secondary" size="sm" /><IconButton icon="printer" label="Print" size="lg" variant="secondary" /></div>
+            <div className="gal-row"><span className="gal-lbl">Icons</span>{['layout-dashboard', 'repeat', 'calendar-days', 'truck', 'package', 'users', 'dog', 'bone', 'map-pin', 'phone', 'mail', 'credit-card', 'skip-forward', 'pause', 'bell', 'search', 'filter', 'settings', 'store', 'route'].map(n => <Icon key={n} name={n} color="var(--teal-500)" />)}</div>
+          </div>
+        </Sec>
+
+        <Sec id="forms" title="Forms" desc="Input · Select · Textarea · Checkbox · Radio · Switch">
+          <div className="gal-panel">
+            <div className="gal-grid2">
+              <Input label="Customer name" placeholder="First and last name" />
+              <Input label="Email" defaultValue="daniella.russo@example.com" hint="Used for delivery reminders" />
+              <Input iconLeft="search" placeholder="Search customers, pups, orders…" />
+              <Input label="Bag size" defaultValue="26" suffix="lbs" error="Only 4, 12 or 24 lb bags are stocked" />
+              <Input label="Phone" iconLeft="phone" placeholder="(631) 555-0100" size="sm" />
+              <Input label="Account ID" defaultValue="BR-1042" disabled />
+              <Textarea label="Delivery notes" placeholder="Gate code, where to leave the box…" hint="Shown to the driver" style={{ gridColumn: 'span 2' }} rows={3} />
+            </div>
+            <div className="gal-grid3" style={{ paddingTop: 18, borderTop: '1px solid var(--border-subtle)' }}>
+              <div className="gal-col"><span className="gal-lbl">Checkbox</span><Checkbox label="Text reminder 2 days before" checked={chk} onChange={setChk} /><Checkbox label="Leave at side gate" description="Customer note on file" /><Checkbox label="Indeterminate" indeterminate /><Checkbox label="Disabled" disabled /></div>
+              <div className="gal-col"><span className="gal-lbl">Radio</span>{[['2', 'Every 2 weeks'], ['4', 'Every 4 weeks', 'Most popular'], ['6', 'Every 6 weeks']].map(([v, l, d]) => <Radio key={v} name="freq" value={v} label={l} description={d} checked={radio === v} onChange={setRadio} />)}<Radio name="x" value="x" label="Disabled" disabled /></div>
+              <div className="gal-col"><span className="gal-lbl">Switch</span><Switch label="Autoship active" checked={sw1} onChange={setSw1} /><Switch label="SMS reminders" checked={sw2} onChange={setSw2} /><Switch label="Disabled" disabled /></div>
+            </div>
+          </div>
+        </Sec>
+
+        <Sec id="dropdowns" title="Dropdowns" desc="Select for form values · DropdownMenu for actions and sort/view pickers">
+          <div className="gal-panel">
+            <div className="gal-grid3">
+              <Select label="Deliver every" defaultValue="4" options={[{ value: '2', label: '2 weeks' }, { value: '4', label: '4 weeks' }, { value: '6', label: '6 weeks' }]} />
+              <Select label="Route" defaultValue="A" hint="Sets the delivery day" options={[{ value: 'A', label: 'Route A — Northport' }, { value: 'B', label: 'Route B — Huntington' }, { value: 'C', label: 'Route C — Syosset' }]} />
+              <Select label="Status" defaultValue="all" size="sm" options={[{ value: 'all', label: 'All statuses' }, 'Active', 'Paused', 'Past due', 'Cancelled']} />
+            </div>
+            <div className="gal-row" style={{ paddingTop: 18, borderTop: '1px solid var(--border-subtle)', minHeight: 60 }}>
+              <span className="gal-lbl">Menus</span>
+              <DropdownMenu trigger={<Button variant="secondary" size="sm" iconRight="chevron-down">Actions</Button>} items={[{ heading: 'Subscription' }, { label: 'Edit plan', icon: 'pencil' }, { label: 'Skip next delivery', icon: 'skip-forward' }, { label: 'Pause', icon: 'pause' }, { divider: true }, { label: 'Cancel autoship', icon: 'trash-2', danger: true }]} />
+              <DropdownMenu trigger={<Button variant="ghost" size="sm" iconLeft="arrow-up-down" iconRight="chevron-down">Sort: {sortBy}</Button>} items={['Next delivery', 'Customer name', 'Plan total', 'Date joined'].map(l => ({ label: l, selected: sortBy === l, onSelect: () => setSortBy(l) }))} />
+              <DropdownMenu trigger={<IconButton icon="ellipsis" label="More" variant="secondary" size="sm" />} items={[{ label: 'Export CSV', icon: 'download', shortcut: '⌘E' }, { label: 'Print pick list', icon: 'printer', shortcut: '⌘P' }, { label: 'Archive', icon: 'package', disabled: true }]} />
+            </div>
+          </div>
+        </Sec>
+
+        <Sec id="chips" title="Chips & badges" desc="Badge = read-only status pill · Chip = interactive filter or descriptive tag">
+          <div className="gal-panel">
+            <div className="gal-row"><span className="gal-lbl">Badge soft</span><Badge tone="success" dot>Active</Badge><Badge tone="warning" dot>Paused</Badge><Badge tone="danger" dot>Past due</Badge><Badge tone="info" dot>Scheduled</Badge><Badge tone="neutral" dot>Cancelled</Badge><Badge tone="brand">Bakery</Badge><Badge tone="success">Delivered</Badge><Badge tone="neutral">Refunded</Badge></div>
+            <div className="gal-row"><span className="gal-lbl">Badge solid</span><Badge tone="success" variant="solid">Paid</Badge><Badge tone="warning" variant="solid">Low stock</Badge><Badge tone="danger" variant="solid">Payment failed</Badge><Badge tone="info" variant="solid">New</Badge><Badge tone="neutral" variant="solid">Draft</Badge><Badge tone="brand" variant="solid">VIP</Badge></div>
+            <div className="gal-row"><span className="gal-lbl">Filter chips</span>{[['all', 'All'], ['Active', 'Active'], ['Paused', 'Paused'], ['Past due', 'Past due'], ['Cancelled', 'Cancelled']].map(([id, l]) => <Chip key={id} selected={filter === id} onClick={() => setFilter(id)} count={counts[id] || 0}>{l}</Chip>)}<Chip icon="filter" onClick={() => {}}>More filters</Chip></div>
+            <div className="gal-row"><span className="gal-lbl">Tags</span><Chip variant="tag" icon="dog">Golden Retriever</Chip>{tags.map(t => <Chip key={t} variant="tag" onRemove={() => setTags(tags.filter(x => x !== t))}>{t}</Chip>)}<Chip variant="tag" size="sm">Small tag</Chip></div>
+            <div className="gal-row"><span className="gal-lbl">Small chips</span><Chip size="sm" selected onClick={() => {}}>Route A</Chip><Chip size="sm" onClick={() => {}}>Route B</Chip><Chip size="sm" onClick={() => {}}>Route C</Chip></div>
+          </div>
+        </Sec>
+
+        <Sec id="cards" title="Cards" desc="Card (default · cream · brand) · StatCard">
+          <div className="gal-grid4">
+            <StatCard label="Active autoships" value="1,284" delta="+38" trend="up" caption="this month" icon="repeat" />
+            <StatCard label="Deliveries this week" value="186" caption="across 3 routes" icon="truck" />
+            <StatCard label="Monthly recurring" value="$92.4k" delta="+4.1%" trend="up" caption="vs Aug" icon="circle-dollar-sign" />
+            <StatCard label="Past due" value="12" delta="+3" trend="down" caption="since last week" icon="credit-card" />
+          </div>
+          <div className="gal-grid3">
+            <Card eyebrow="Autoship plan" title="Open Farm Lamb & Oat" actions={<IconButton icon="pencil" label="Edit" size="sm" />} footer={<><Button variant="ghost" size="sm">Skip next</Button><Button size="sm">Edit plan</Button></>}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14.5 }}>
+                <div><div className="gal-lbl" style={{ width: 'auto', marginBottom: 4 }}>Size</div>24 lb</div><div><div className="gal-lbl" style={{ width: 'auto', marginBottom: 4 }}>Every</div>4 weeks</div>
+                <div><div className="gal-lbl" style={{ width: 'auto', marginBottom: 4 }}>Next</div>Thu, Oct 2</div><div><div className="gal-lbl" style={{ width: 'auto', marginBottom: 4 }}>Per box</div>$89.99</div>
+              </div>
+            </Card>
+            <Card tone="cream" eyebrow="Pup" title="Biscuit">
+              <div style={{ fontSize: 14.5, color: 'var(--ink-700)', marginBottom: 12 }}>Golden Retriever · 6 yrs · 68 lb</div>
+              <div className="gal-row" style={{ gap: 6 }}><Chip variant="tag" size="sm">Grain-free</Chip><Chip variant="tag" size="sm">Chicken allergy</Chip></div>
+            </Card>
+            <Card tone="brand" eyebrow="Today" title="Route A — 14 stops">
+              <div style={{ fontSize: 14.5, color: 'var(--teal-100)', marginBottom: 14 }}>Leaves the shop at 8:30 AM</div>
+              <Button variant="cream" size="sm" iconLeft="route">View route</Button>
+            </Card>
+          </div>
+        </Sec>
+
+        <Sec id="tables" title="Tables" desc="DataTable (selectable, sortable, row menu) · compact density · empty state · Pagination">
+          <Card flush title="Subscriptions" actions={<><Button variant="secondary" size="sm" iconLeft="download">Export</Button></>}>
+            {sel.length ? <div className="gal-row" style={{ padding: '0 20px 12px', gap: 8 }}><span style={{ font: '700 13px var(--font-display)', color: 'var(--teal-600)' }}>{sel.length} selected</span><Button size="sm" variant="secondary" iconLeft="skip-forward" onClick={() => { toast('success', 'Skipped ' + sel.length + ' deliveries'); setSel([]); }}>Skip next</Button><Button size="sm" variant="ghost" onClick={() => setSel([])}>Clear</Button></div> : null}
+            <DataTable selectable selected={sel} onSelectChange={setSel} sort={sort} onSortChange={setSort} rows={rows} columns={[
+              { key: 'name', header: 'Customer', sortable: true, render: r => <div><div style={{ fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 13, color: 'var(--text-muted)' }}>#{r.id} · {r.town}</div></div> },
+              { key: 'pup', header: 'Pup', render: r => <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}><span>{r.pup}</span><Chip variant="tag" size="sm">{r.tag}</Chip></div> },
+              { key: 'plan', header: 'Plan', render: r => <span>{r.plan}<span style={{ color: 'var(--text-muted)' }}> · {r.size}</span></span> },
+              { key: 'freq', header: 'Every', sortable: true, render: r => r.freq + ' wks' },
+              { key: 'next', header: 'Next', sortable: true },
+              { key: 'status', header: 'Status', render: r => <Badge tone={TONE[r.status]} dot>{r.status}</Badge> },
+              { key: 'total', header: 'Per box', align: 'right', sortable: true, render: r => r.total ? '$' + r.total.toFixed(2) : '—' },
+              { key: 'x', header: '', width: 52, render: r => <div onClick={e => e.stopPropagation()}><RowMenu r={r} /></div> }
+            ]} />
+            <div style={{ borderTop: '1px solid var(--border-subtle)' }}><Pagination page={page} pageCount={52} total={1284} pageSize={25} onChange={setPage} /></div>
+          </Card>
+          <div className="gal-grid2">
+            <Card flush title="Order history" eyebrow="Compact">
+              <DataTable density="compact" rows={[{ id: 'BR-20931', date: 'Sep 4', total: 97.49, s: 'Delivered' }, { id: 'BR-20417', date: 'Aug 7', total: 89.99, s: 'Delivered' }, { id: 'BR-19302', date: 'Jun 12', total: 89.99, s: 'Refunded' }]} columns={[
+                { key: 'id', header: 'Order', render: r => <strong>{r.id}</strong> }, { key: 'date', header: 'Date' },
+                { key: 's', header: 'Status', render: r => <Badge tone={r.s === 'Delivered' ? 'success' : 'neutral'}>{r.s}</Badge> },
+                { key: 'total', header: 'Total', align: 'right', render: r => '$' + r.total.toFixed(2) }]} />
+            </Card>
+            <Card flush title="Failed payments" eyebrow="Empty state">
+              <DataTable rows={[]} empty={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}><Icon name="circle-check" size={24} color="var(--status-success-solid)" /><span>No failed payments this week.</span></div>} columns={[{ key: 'n', header: 'Customer' }, { key: 'a', header: 'Amount', align: 'right' }]} />
+            </Card>
+          </div>
+        </Sec>
+
+        <Sec id="nav" title="Navigation" desc="SidebarNav · Tabs (line + pill) · Breadcrumbs">
+          <div style={{ display: 'flex', gap: 24, alignItems: 'stretch' }}>
+            <div style={{ height: 460, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0 }}>
+              <SidebarNav logoSrc="../../assets/logos/logo.svg" productName="Autoship Admin" active={nav} onSelect={setNav} style={{ borderRight: 0 }} sections={[
+                { items: [{ id: 'dash', label: 'Dashboard', icon: 'layout-dashboard' }, { id: 'subs', label: 'Subscriptions', icon: 'repeat', badge: 12 }, { id: 'sched', label: 'Delivery schedule', icon: 'calendar-days' }, { id: 'cust', label: 'Customers', icon: 'users' }] },
+                { title: 'Store', items: [{ id: 'prod', label: 'Products', icon: 'package' }, { id: 'routes', label: 'Routes', icon: 'route' }, { id: 'set', label: 'Settings', icon: 'settings' }] }]}
+                footer={<div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Kevin N. · Owner</div>} />
+            </div>
+            <div className="gal-panel" style={{ flex: 1, gap: 28 }}>
+              <div className="gal-col"><span className="gal-lbl">Breadcrumbs</span><Breadcrumbs items={[{ label: 'Customers', onClick: () => {} }, { label: 'Daniella Russo', onClick: () => {} }, { label: 'Subscription #1042' }]} /></div>
+              <div className="gal-col"><span className="gal-lbl">Tabs</span><Tabs value={tab} onChange={setTab} tabs={[{ id: 'overview', label: 'Overview' }, { id: 'orders', label: 'Orders', count: 14 }, { id: 'pups', label: 'Pups', count: 2 }, { id: 'notes', label: 'Notes' }]} /></div>
+              <div className="gal-col"><span className="gal-lbl">Pill tabs</span><Tabs variant="pill" value={pill} onChange={setPill} tabs={[{ id: 'day', label: 'Day' }, { id: 'week', label: 'Week' }, { id: 'list', label: 'List' }]} /></div>
+            </div>
+          </div>
+        </Sec>
+
+        <Sec id="feedback" title="Feedback" desc="Alert (inline, persistent) · Toast (transient) · Tooltip">
+          <div className="gal-grid2">
+            <div className="gal-col">
+              <Alert tone="danger" title="Card declined" action={<Button size="sm" variant="secondary" iconLeft="mail">Send update link</Button>}>Visa ending 4242 was declined on Sep 26. Next delivery is on hold.</Alert>
+              <Alert tone="warning" title="Route cutoff at 3 PM">Changes made after cutoff apply to the next cycle.</Alert>
+              <Alert tone="success" onClose={() => {}}>12 subscriptions moved to Route B.</Alert>
+              <Alert tone="info" title="New product">Bakery Box — Small is now available for autoship.</Alert>
+            </div>
+            <div className="gal-col">
+              <Toast tone="success" title="Next delivery skipped" message="Biscuit’s box moves to Oct 30." actionLabel="Undo" onClose={() => {}} style={{ width: '100%' }} />
+              <Toast tone="danger" title="Couldn’t save changes" message="Check your connection and try again." onClose={() => {}} style={{ width: '100%' }} />
+              <div className="gal-row">
+                <Button size="sm" variant="secondary" onClick={() => toast('success', 'Subscription paused', 'Resumes Oct 30.')}>Fire success toast</Button>
+                <Button size="sm" variant="secondary" onClick={() => toast('warning', 'Low stock', 'Open Farm Lamb 24 lb — 6 bags left.')}>Fire warning toast</Button>
+              </div>
+              <div className="gal-row" style={{ paddingTop: 40, gap: 24 }}>
+                <span className="gal-lbl">Tooltip</span>
+                <Tooltip open content="Skip next delivery"><IconButton icon="skip-forward" label="Skip" variant="secondary" /></Tooltip>
+                <Tooltip content="Hover me — bottom" placement="bottom"><Button size="sm" variant="ghost">Hover</Button></Tooltip>
+              </div>
+            </div>
+          </div>
+        </Sec>
+
+        <Sec id="dialogs" title="Dialogs" desc="Dialog — confirmations and short forms">
+          <div className="gal-panel">
+            <div className="gal-row">
+              <Button iconLeft="pause" onClick={() => setDlg('pause')}>Open pause dialog</Button>
+              <Button variant="secondary" iconLeft="pencil" onClick={() => setDlg('edit')}>Open edit form dialog</Button>
+              <Button variant="danger" onClick={() => setDlg('cancel')}>Open destructive confirm</Button>
+            </div>
+          </div>
+        </Sec>
+      </div>
+
+      <Dialog open={dlg === 'pause'} onClose={() => setDlg(null)} title="Pause Biscuit’s autoship?" description="Deliveries stop until the pause ends. Daniella gets an email confirmation."
+        footer={<><Button variant="ghost" onClick={() => setDlg(null)}>Keep active</Button><Button onClick={() => { setDlg(null); toast('success', 'Autoship paused', 'Resumes Oct 30.'); }}>Pause autoship</Button></>}>
+        <div className="gal-col">{[['2w', '2 weeks', 'Resumes Oct 16'], ['1m', '1 month', 'Resumes Oct 30'], ['open', 'Until resumed manually']].map(([v, l, d]) => <Radio key={v} name="p" value={v} label={l} description={d} checked={v === '1m'} onChange={() => {}} />)}</div>
+      </Dialog>
+      <Dialog open={dlg === 'edit'} size="lg" onClose={() => setDlg(null)} title="Edit plan"
+        footer={<><Button variant="ghost" onClick={() => setDlg(null)}>Cancel</Button><Button onClick={() => { setDlg(null); toast('success', 'Plan updated'); }}>Save changes</Button></>}>
+        <div className="gal-grid2">
+          <Select label="Product" defaultValue="lamb" options={[{ value: 'lamb', label: 'Open Farm Lamb & Oat' }, { value: 'salmon', label: 'Open Farm Salmon' }]} />
+          <Select label="Size" defaultValue="24" options={[{ value: '12', label: '12 lb' }, { value: '24', label: '24 lb' }]} />
+          <Select label="Deliver every" defaultValue="4" options={[{ value: '2', label: '2 weeks' }, { value: '4', label: '4 weeks' }, { value: '6', label: '6 weeks' }]} />
+          <Input label="Quantity" type="number" defaultValue="1" />
+          <Textarea label="Notes" rows={2} style={{ gridColumn: 'span 2' }} placeholder="Internal note" />
+        </div>
+      </Dialog>
+      <Dialog open={dlg === 'cancel'} size="sm" onClose={() => setDlg(null)} title="Cancel autoship?" description="Daniella’s subscription ends now and no future deliveries will be scheduled. This can’t be undone."
+        footer={<><Button variant="ghost" onClick={() => setDlg(null)}>Keep subscription</Button><Button variant="danger" onClick={() => { setDlg(null); toast('success', 'Autoship cancelled'); }}>Cancel autoship</Button></>} />
+      <div className="br-toast-stack">{toasts.map(t => <Toast key={t.id} tone={t.tone} title={t.title} message={t.message} onClose={() => setToasts(x => x.filter(y => y.id !== t.id))} />)}</div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Gallery />);
+</script></body></html>
