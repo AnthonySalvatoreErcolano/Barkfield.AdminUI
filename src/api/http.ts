@@ -37,8 +37,8 @@ export function configureHttp(options: { baseUrl?: string; onSessionExpired?: ()
 }
 
 /** The caller's cancel signal, if any, combined with the request time limit. */
-function withTimeout(signal?: AbortSignal): AbortSignal {
-  const limit = AbortSignal.timeout(timeoutMs);
+function withTimeout(signal?: AbortSignal, ms = timeoutMs): AbortSignal {
+  const limit = AbortSignal.timeout(ms);
   return signal ? AbortSignal.any([signal, limit]) : limit;
 }
 
@@ -205,7 +205,14 @@ type Options<P extends keyof paths, M extends Method> =
   ([PathParams<P, M>] extends [never] ? { path?: never } : { path: PathParams<P, M> }) &
   ([QueryParams<P, M>] extends [never] ? { query?: never } : { query?: QueryParams<P, M> }) &
   ([Body<P, M>] extends [never] ? { body?: never } : { body: Body<P, M> }) &
-  { signal?: AbortSignal };
+  {
+    signal?: AbortSignal;
+    /**
+     * Override the request time limit. For calls that legitimately run long — charging a whole day
+     * through Square is one card payment per delivery. Giving up early would not stop the charges.
+     */
+    timeoutMs?: number;
+  };
 
 type Args<P extends keyof paths, M extends Method> =
   [PathParams<P, M>] extends [never]
@@ -239,6 +246,7 @@ interface RawRequest {
   query?: Record<string, unknown>;
   body?: unknown;
   signal?: AbortSignal;
+  timeoutMs?: number;
   as: 'json' | 'blob';
 }
 
@@ -257,7 +265,7 @@ async function send(req: RawRequest): Promise<unknown> {
       // On every request, not only the refresh: the cookie is scoped to the API origin and the
       // browser will not attach it cross-origin otherwise.
       credentials: 'include',
-      signal: withTimeout(req.signal),
+      signal: withTimeout(req.signal, req.timeoutMs),
     });
   };
 
@@ -295,7 +303,7 @@ async function send(req: RawRequest): Promise<unknown> {
 
 function operation<M extends Method>(method: M) {
   return <P extends PathsFor<M>>(template: P, ...[options]: Args<P, M>) => {
-    const o = (options ?? {}) as { path?: Record<string, unknown>; query?: Record<string, unknown>; body?: unknown; signal?: AbortSignal };
+    const o = (options ?? {}) as { path?: Record<string, unknown>; query?: Record<string, unknown>; body?: unknown; signal?: AbortSignal; timeoutMs?: number };
     return send({ method, template, ...o, as: 'json' }) as Promise<ResponseOf<P, M>>;
   };
 }

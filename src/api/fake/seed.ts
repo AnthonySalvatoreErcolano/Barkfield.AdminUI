@@ -201,7 +201,7 @@ export function createSeed(): Seed {
 
       const eligibleToday = customer.isActive && status === SubscriptionStatus.Active && (hasAddress || method !== FulfillmentMethod.LocalDelivery)
         && todayIndex < 25 && i % 7 !== 6 && !['Emma', 'Owen'].includes(p.first);
-      const generatedToday = eligibleToday || ['Marcus', 'Kate', 'Pat', 'Frank', 'Tess'].includes(p.first) && status === SubscriptionStatus.Active;
+      const generatedToday = eligibleToday || ['Marcus', 'Kate', 'Pat', 'Frank', 'Tess', 'Luis', 'Grace', 'Hannah', 'Jamal', 'Noah'].includes(p.first) && status === SubscriptionStatus.Active;
       // Due dates: the day's run was generated this morning, so those moved on a cycle. Two others are
       // overdue and not yet generated; Jake's is due but he has no address; Beth's pause ends today.
       const next = generatedToday ? cycleDays
@@ -275,7 +275,8 @@ export function createSeed(): Seed {
       // Ann's box stays untouched (all pending): the procurement fake makes it "keep changing", and a
       // receive-all should never trip on it.
       const state: TodayState = p.first === 'Tess' ? 'inProgress' : p.first === 'Ann' ? 'notStarted'
-        : ['Marcus', 'Kate', 'Pat', 'Frank'].includes(p.first) ? 'ready'
+        // Ready to charge, with the billing fake's card outcomes attached to them (see fake/billing.ts).
+        : ['Marcus', 'Kate', 'Pat', 'Frank', 'Luis', 'Grace', 'Hannah', 'Jamal', 'Noah'].includes(p.first) ? 'ready'
         : TODAY_PATTERN[todayIndex % TODAY_PATTERN.length]!;
       todayIndex++;
       const d = build(0, n => {

@@ -277,6 +277,17 @@ describe('error mapping', () => {
     expect(error.message).toMatch(/didn’t answer in time/);
   });
 
+  it('lets a long-running call (charging the day) ask for more time than the default limit', async () => {
+    configureHttp({ timeoutMs: 50 });
+    setAccessToken('valid');
+    server.use(msw.post(`${API}/api/deliveries/charge-all`, async () => {
+      await delay(150);
+      return HttpResponse.json({ deliveryDate: '2026-10-01T00:00:00Z', considered: 0, attempted: [], skipped: [] });
+    }));
+    await expect(http.post('/api/deliveries/charge-all', { body: { deliveryDate: '2026-10-01T00:00:00Z' } })).rejects.toBeInstanceOf(TimeoutError);
+    await expect(http.post('/api/deliveries/charge-all', { body: { deliveryDate: '2026-10-01T00:00:00Z' }, timeoutMs: 1000 })).resolves.toMatchObject({ considered: 0 });
+  });
+
   it('does not hold start-up on a slow refresh — it stops waiting, but never aborts the refresh', async () => {
     configureHttp({ timeoutMs: 50 });
     const seen = { finished: false, aborted: false, calls: 0 };

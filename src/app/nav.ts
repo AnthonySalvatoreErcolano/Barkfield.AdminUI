@@ -38,7 +38,7 @@ export const NAV: NavSection[] = [
     screens: [
       { id: 'deliveries', label: 'Deliveries', path: '/deliveries', icon: 'package', requires: 'GET /api/deliveries', built: true },
       { id: 'procurement', label: 'Procurement', path: '/procurement', icon: 'shopping-bag', requires: 'GET /api/procurement/products', built: true },
-      { id: 'billing', label: 'Billing', path: '/billing', icon: 'credit-card', requires: 'GET /api/deliveries/needs-attention', built: false },
+      { id: 'billing', label: 'Billing', path: '/billing', icon: 'credit-card', requires: 'GET /api/deliveries/needs-attention', built: true },
       { id: 'dispatch', label: 'Dispatch', path: '/dispatch', icon: 'truck', requires: 'GET /api/dispatch', built: false },
     ],
   },

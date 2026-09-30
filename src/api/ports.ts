@@ -145,6 +145,24 @@ export interface ProcurementPort {
   apply(decisions: ProcurementDecision[]): Promise<ProcurementResult>;
 }
 
+export type SquareDiscount = Schemas['SquareDiscountDto'];
+export type ChargeResult = Schemas['DeliveryChargeResult'];
+export type BatchChargeResult = Schemas['BatchChargeResult'];
+export type ChargeAttentionItem = Schemas['ChargeAttentionItem'];
+
+export interface BillingPort {
+  /** Square's live discount list, for staff to pick from. The percentages are labels — never do arithmetic with them. */
+  discounts(): Promise<SquareDiscount[]>;
+  /** Replace the chosen discounts (ids only; Square applies them). Refused once the delivery is paid. */
+  selectDiscounts(deliveryId: string, squareDiscountIds: string[]): Promise<void>;
+  /** Charge one delivery. A refused card is a result, not an error. */
+  charge(deliveryId: string): Promise<ChargeResult>;
+  /** Charge every ready, unpaid delivery on a day. One list back: paid, declined, failed, skipped. */
+  chargeAll(date: string): Promise<BatchChargeResult>;
+  /** Cards refused, and paid deliveries that came up short (a refund owed, made by hand in Square). */
+  needsAttention(range: { from?: string; to?: string }): Promise<ChargeAttentionItem[]>;
+}
+
 export interface ProductsPort {
   list(query: NonNullable<paths['/api/products']['get']['parameters']['query']>, signal?: AbortSignal): Promise<ProductPage>;
 }
@@ -156,4 +174,5 @@ export interface Api {
   deliveries: DeliveriesPort;
   products: ProductsPort;
   procurement: ProcurementPort;
+  billing: BillingPort;
 }

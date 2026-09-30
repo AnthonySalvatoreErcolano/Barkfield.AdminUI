@@ -1,6 +1,10 @@
 // Live implementations over http.ts. No cross-cutting concerns here — those all belong to http.ts.
 import { clearAccessToken, configureHttp, http, refreshSessionWithin, setAccessToken } from '../http';
 import type { Api } from '../ports';
+import { toApiDay } from '../../lib/dates';
+
+/** Charging goes to Square once per delivery; a day's run can take minutes. */
+const CHARGE_TIMEOUT_MS = 5 * 60_000;
 
 export function createLiveApi(): Api {
   const expiredListeners = new Set<() => void>();
@@ -130,6 +134,16 @@ export function createLiveApi(): Api {
     },
     products: {
       list: (query, signal) => http.get('/api/products', { query, signal }),
+    },
+    billing: {
+      discounts: () => http.get('/api/discounts'),
+      async selectDiscounts(deliveryId, squareDiscountIds) {
+        await http.put('/api/deliveries/{deliveryId}/discounts', { path: { deliveryId }, body: { squareDiscountIds } });
+      },
+      // Real card payments: a long limit, because giving up early would not stop the charge.
+      charge: deliveryId => http.post('/api/deliveries/{deliveryId}/charge', { path: { deliveryId }, timeoutMs: CHARGE_TIMEOUT_MS }),
+      chargeAll: date => http.post('/api/deliveries/charge-all', { body: { deliveryDate: toApiDay(date) }, timeoutMs: CHARGE_TIMEOUT_MS }),
+      needsAttention: range => http.get('/api/deliveries/needs-attention', { query: range }),
     },
     procurement: {
       products: (query, signal) => http.get('/api/procurement/products', { query, signal }),

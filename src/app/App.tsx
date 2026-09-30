@@ -7,6 +7,7 @@ import { AccountPage } from '../pages/AccountPage';
 import { CustomersRoutes } from '../pages/customers/CustomersRoutes';
 import { DeliveriesRoutes } from '../pages/deliveries/DeliveriesRoutes';
 import { ProcurementPage } from '../pages/procurement/ProcurementPage';
+import { BillingPage } from '../pages/billing/BillingPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { LoginPage, type LoginLocationState } from '../pages/auth/LoginPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
@@ -20,6 +21,7 @@ const BUILT: Record<string, () => ReactNode> = {
   customers: CustomersRoutes,
   deliveries: DeliveriesRoutes,
   procurement: ProcurementPage,
+  billing: BillingPage,
 };
 
 function RequireSession() {
