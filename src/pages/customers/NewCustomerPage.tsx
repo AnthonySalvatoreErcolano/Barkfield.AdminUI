@@ -66,7 +66,7 @@ function FindStep({ onFound, locked, onReset }: { onFound: (f: Found & { email: 
     setExisting(null);
     try {
       const [ours, square] = await Promise.all([
-        api.customers.list({ Email: email.trim(), IncludeInactive: true, PageSize: 1 }),
+        api.customers.list({ email: email.trim(), includeInactive: true, pageSize: 1 }),
         api.customers.searchSquare({ email: email.trim(), phoneNumber: phone.trim() || null }),
       ]);
       const match = ours.items[0] ?? null;

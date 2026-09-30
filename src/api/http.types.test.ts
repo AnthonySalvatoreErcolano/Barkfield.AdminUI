@@ -17,7 +17,7 @@ function typeChecks() {
   http.get('/api/customers/{customerId}');
 
   // Query keys come from the spec.
-  http.get('/api/customers', { query: { SearchTerm: 'russo', IncludeInactive: true } });
+  http.get('/api/customers', { query: { searchTerm: 'russo', includeInactive: true } });
   // @ts-expect-error — not a query parameter of this endpoint
   http.get('/api/customers', { query: { search: 'russo' } });
 

@@ -10,7 +10,7 @@ the UI repo; it is written to travel.
 | **`PAGES.md`** | Every screen and the endpoints feeding it, with the domain vocabulary |
 | **`UI-KICKOFF.md`** | A brief to paste into Claude Code in the UI workspace |
 | **`regenerate.ps1`** | Refreshes `openapi.json` (and the stats block in `API-CONTEXT.md`) from the running API |
-| **`audit.js`** | Checks the markdown still matches the spec |
+| **`audit.cjs`** | Checks the markdown still matches the spec |
 
 ## Reading order
 
@@ -55,10 +55,10 @@ document described every endpoint as anonymous and a generated client would have
 ## Keeping the docs honest
 
 Both markdown files make factual claims about the API — endpoint paths, permission strings, counts.
-`audit.js` checks them against `openapi.json`:
+`audit.cjs` checks them against `openapi.json`:
 
 ```bash
-node contracts/audit.js
+node contracts/audit.cjs
 ```
 
 It verifies that every `/api/...` path the docs cite exists, that every permission string they name is

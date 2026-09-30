@@ -21,13 +21,13 @@ export function CustomersListPage() {
   const unlinked = list.flag('unlinked');
 
   const query = {
-    SearchTerm: list.search || undefined,
-    IncludeInactive: archived || undefined,
-    HasSquareAccount: unlinked ? false : undefined,
-    SortBy: list.sort.key,
-    SortDescending: list.sort.dir === 'desc',
-    PageNumber: list.page,
-    PageSize: PAGE_SIZE,
+    searchTerm: list.search || undefined,
+    includeInactive: archived || undefined,
+    hasSquareAccount: unlinked ? false : undefined,
+    sortBy: list.sort.key,
+    sortDescending: list.sort.dir === 'desc',
+    pageNumber: list.page,
+    pageSize: PAGE_SIZE,
   };
   const { data, error, isPending, isFetching, refetch } = useQuery({
     queryKey: customerKeys.list(query),

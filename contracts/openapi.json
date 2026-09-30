@@ -770,49 +770,36 @@
                                                               ],
                                                      "parameters":  [
                                                                         {
-                                                                            "name":  "SearchTerm",
+                                                                            "name":  "searchTerm",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "type":  "string"
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "Email",
+                                                                            "name":  "email",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "type":  "string"
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "HasSquareAccount",
+                                                                            "name":  "hasSquareAccount",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "type":  "boolean"
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "IncludeInactive",
+                                                                            "name":  "includeInactive",
                                                                             "in":  "query",
                                                                             "schema":  {
-                                                                                           "type":  "boolean"
+                                                                                           "type":  "boolean",
+                                                                                           "default":  false
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "SortBy",
-                                                                            "in":  "query",
-                                                                            "schema":  {
-                                                                                           "type":  "string"
-                                                                                       }
-                                                                        },
-                                                                        {
-                                                                            "name":  "SortDescending",
-                                                                            "in":  "query",
-                                                                            "schema":  {
-                                                                                           "type":  "boolean"
-                                                                                       }
-                                                                        },
-                                                                        {
-                                                                            "name":  "PageSize",
+                                                                            "name":  "pageNumber",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "pattern":  "^-?(?:0|[1-9]\\d*)$",
@@ -820,11 +807,12 @@
                                                                                                         "integer",
                                                                                                         "string"
                                                                                                     ],
-                                                                                           "format":  "int32"
+                                                                                           "format":  "int32",
+                                                                                           "default":  1
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "PageNumber",
+                                                                            "name":  "pageSize",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "pattern":  "^-?(?:0|[1-9]\\d*)$",
@@ -832,26 +820,23 @@
                                                                                                         "integer",
                                                                                                         "string"
                                                                                                     ],
-                                                                                           "format":  "int32"
+                                                                                           "format":  "int32",
+                                                                                           "default":  25
                                                                                        }
                                                                         },
                                                                         {
-                                                                            "name":  "Skip",
-                                                                            "in":  "query",
-                                                                            "schema":  {
-                                                                                           "pattern":  "^-?(?:0|[1-9]\\d*)$",
-                                                                                           "type":  [
-                                                                                                        "integer",
-                                                                                                        "string"
-                                                                                                    ],
-                                                                                           "format":  "int32"
-                                                                                       }
-                                                                        },
-                                                                        {
-                                                                            "name":  "EffectiveSortBy",
+                                                                            "name":  "sortBy",
                                                                             "in":  "query",
                                                                             "schema":  {
                                                                                            "type":  "string"
+                                                                                       }
+                                                                        },
+                                                                        {
+                                                                            "name":  "sortDescending",
+                                                                            "in":  "query",
+                                                                            "schema":  {
+                                                                                           "type":  "boolean",
+                                                                                           "default":  false
                                                                                        }
                                                                         }
                                                                     ],
@@ -2287,6 +2272,7 @@
                                                                                {
                                                                                    "name":  "from",
                                                                                    "in":  "query",
+                                                                                   "required":  true,
                                                                                    "schema":  {
                                                                                                   "type":  "string",
                                                                                                   "format":  "date-time"
@@ -2384,6 +2370,7 @@
                                                                              {
                                                                                  "name":  "date",
                                                                                  "in":  "query",
+                                                                                 "required":  true,
                                                                                  "schema":  {
                                                                                                 "type":  "string",
                                                                                                 "format":  "date-time"
@@ -5549,6 +5536,7 @@
                                                                                    {
                                                                                        "name":  "from",
                                                                                        "in":  "query",
+                                                                                       "required":  true,
                                                                                        "schema":  {
                                                                                                       "type":  "string",
                                                                                                       "format":  "date-time"
@@ -5557,6 +5545,7 @@
                                                                                    {
                                                                                        "name":  "to",
                                                                                        "in":  "query",
+                                                                                       "required":  true,
                                                                                        "schema":  {
                                                                                                       "type":  "string",
                                                                                                       "format":  "date-time"
@@ -5730,6 +5719,7 @@
                                                                                 {
                                                                                     "name":  "from",
                                                                                     "in":  "query",
+                                                                                    "required":  true,
                                                                                     "schema":  {
                                                                                                    "type":  "string",
                                                                                                    "format":  "date-time"
@@ -5738,6 +5728,7 @@
                                                                                 {
                                                                                     "name":  "to",
                                                                                     "in":  "query",
+                                                                                    "required":  true,
                                                                                     "schema":  {
                                                                                                    "type":  "string",
                                                                                                    "format":  "date-time"
@@ -9946,14 +9937,14 @@
                                                           ],
                                                  "parameters":  [
                                                                     {
-                                                                        "name":  "SearchTerm",
+                                                                        "name":  "searchTerm",
                                                                         "in":  "query",
                                                                         "schema":  {
                                                                                        "type":  "string"
                                                                                    }
                                                                     },
                                                                     {
-                                                                        "name":  "RoleId",
+                                                                        "name":  "roleId",
                                                                         "in":  "query",
                                                                         "schema":  {
                                                                                        "type":  "string",
@@ -9961,67 +9952,52 @@
                                                                                    }
                                                                     },
                                                                     {
-                                                                        "name":  "IncludeInactive",
+                                                                        "name":  "includeInactive",
                                                                         "in":  "query",
                                                                         "schema":  {
-                                                                                       "type":  "boolean"
+                                                                                       "type":  "boolean",
+                                                                                       "default":  false
                                                                                    }
                                                                     },
                                                                     {
-                                                                        "name":  "SortBy",
+                                                                        "name":  "pageNumber",
+                                                                        "in":  "query",
+                                                                        "schema":  {
+                                                                                       "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                       "type":  [
+                                                                                                    "integer",
+                                                                                                    "string"
+                                                                                                ],
+                                                                                       "format":  "int32",
+                                                                                       "default":  1
+                                                                                   }
+                                                                    },
+                                                                    {
+                                                                        "name":  "pageSize",
+                                                                        "in":  "query",
+                                                                        "schema":  {
+                                                                                       "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                       "type":  [
+                                                                                                    "integer",
+                                                                                                    "string"
+                                                                                                ],
+                                                                                       "format":  "int32",
+                                                                                       "default":  25
+                                                                                   }
+                                                                    },
+                                                                    {
+                                                                        "name":  "sortBy",
                                                                         "in":  "query",
                                                                         "schema":  {
                                                                                        "type":  "string"
                                                                                    }
                                                                     },
                                                                     {
-                                                                        "name":  "SortDescending",
+                                                                        "name":  "sortDescending",
                                                                         "in":  "query",
                                                                         "schema":  {
-                                                                                       "type":  "boolean"
-                                                                                   }
-                                                                    },
-                                                                    {
-                                                                        "name":  "PageSize",
-                                                                        "in":  "query",
-                                                                        "schema":  {
-                                                                                       "pattern":  "^-?(?:0|[1-9]\\d*)$",
-                                                                                       "type":  [
-                                                                                                    "integer",
-                                                                                                    "string"
-                                                                                                ],
-                                                                                       "format":  "int32"
-                                                                                   }
-                                                                    },
-                                                                    {
-                                                                        "name":  "PageNumber",
-                                                                        "in":  "query",
-                                                                        "schema":  {
-                                                                                       "pattern":  "^-?(?:0|[1-9]\\d*)$",
-                                                                                       "type":  [
-                                                                                                    "integer",
-                                                                                                    "string"
-                                                                                                ],
-                                                                                       "format":  "int32"
-                                                                                   }
-                                                                    },
-                                                                    {
-                                                                        "name":  "Skip",
-                                                                        "in":  "query",
-                                                                        "schema":  {
-                                                                                       "pattern":  "^-?(?:0|[1-9]\\d*)$",
-                                                                                       "type":  [
-                                                                                                    "integer",
-                                                                                                    "string"
-                                                                                                ],
-                                                                                       "format":  "int32"
-                                                                                   }
-                                                                    },
-                                                                    {
-                                                                        "name":  "EffectiveSortBy",
-                                                                        "in":  "query",
-                                                                        "schema":  {
-                                                                                       "type":  "string"
+                                                                                       "type":  "boolean",
+                                                                                       "default":  false
                                                                                    }
                                                                     }
                                                                 ],
@@ -11899,6 +11875,31 @@
                                                                                                                           "string"
                                                                                                                       ]
                                                                                                          },
+                                                                                    "frequencyInterval":  {
+                                                                                                              "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                              "type":  [
+                                                                                                                           "null",
+                                                                                                                           "integer",
+                                                                                                                           "string"
+                                                                                                                       ],
+                                                                                                              "format":  "int32"
+                                                                                                          },
+                                                                                    "frequencyUnit":  {
+                                                                                                          "oneOf":  [
+                                                                                                                        {
+                                                                                                                            "type":  "null"
+                                                                                                                        },
+                                                                                                                        {
+                                                                                                                            "$ref":  "#/components/schemas/FrequencyUnit"
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                                      },
+                                                                                    "subscriptionDisplayName":  {
+                                                                                                                    "type":  [
+                                                                                                                                 "null",
+                                                                                                                                 "string"
+                                                                                                                             ]
+                                                                                                                },
                                                                                     "customerId":  {
                                                                                                        "type":  "string",
                                                                                                        "format":  "uuid"
@@ -12424,6 +12425,31 @@
                                                                                                                             "string"
                                                                                                                         ]
                                                                                                            },
+                                                                                      "frequencyInterval":  {
+                                                                                                                "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                                "type":  [
+                                                                                                                             "null",
+                                                                                                                             "integer",
+                                                                                                                             "string"
+                                                                                                                         ],
+                                                                                                                "format":  "int32"
+                                                                                                            },
+                                                                                      "frequencyUnit":  {
+                                                                                                            "oneOf":  [
+                                                                                                                          {
+                                                                                                                              "type":  "null"
+                                                                                                                          },
+                                                                                                                          {
+                                                                                                                              "$ref":  "#/components/schemas/FrequencyUnit"
+                                                                                                                          }
+                                                                                                                      ]
+                                                                                                        },
+                                                                                      "subscriptionDisplayName":  {
+                                                                                                                      "type":  [
+                                                                                                                                   "null",
+                                                                                                                                   "string"
+                                                                                                                               ]
+                                                                                                                  },
                                                                                       "customerId":  {
                                                                                                          "type":  "string",
                                                                                                          "format":  "uuid"
@@ -14279,6 +14305,41 @@
                                                                                                                            "string"
                                                                                                                        ]
                                                                                                           },
+                                                                                     "subscriptionId":  {
+                                                                                                            "type":  [
+                                                                                                                         "null",
+                                                                                                                         "string"
+                                                                                                                     ],
+                                                                                                            "format":  "uuid"
+                                                                                                        },
+                                                                                     "frequencyInterval":  {
+                                                                                                               "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                               "type":  [
+                                                                                                                            "null",
+                                                                                                                            "integer",
+                                                                                                                            "string"
+                                                                                                                        ],
+                                                                                                               "format":  "int32"
+                                                                                                           },
+                                                                                     "frequencyUnit":  {
+                                                                                                           "oneOf":  [
+                                                                                                                         {
+                                                                                                                             "type":  "null"
+                                                                                                                         },
+                                                                                                                         {
+                                                                                                                             "$ref":  "#/components/schemas/FrequencyUnit"
+                                                                                                                         }
+                                                                                                                     ]
+                                                                                                       },
+                                                                                     "isOneOff":  {
+                                                                                                      "type":  "boolean"
+                                                                                                  },
+                                                                                     "subscriptionDisplayName":  {
+                                                                                                                     "type":  [
+                                                                                                                                  "null",
+                                                                                                                                  "string"
+                                                                                                                              ]
+                                                                                                                 },
                                                                                      "productId":  {
                                                                                                        "type":  "string",
                                                                                                        "format":  "uuid"

@@ -21,11 +21,8 @@ export type SubscriptionListItem = Schemas['SubscriptionListItemDto'];
 export type DeliveryPage = Schemas['PagedResultOfDeliveryListItemDto'];
 export type DeliveryListItem = Schemas['DeliveryListItemDto'];
 
-/**
- * GET /api/customers query, as the spec types it — minus Skip and EffectiveSortBy, which are computed
- * properties of the API's filter record that leak into the spec and mean nothing when sent.
- */
-export type CustomerListQuery = Omit<NonNullable<paths['/api/customers']['get']['parameters']['query']>, 'Skip' | 'EffectiveSortBy'>;
+/** GET /api/customers query, as the spec types it. */
+export type CustomerListQuery = NonNullable<paths['/api/customers']['get']['parameters']['query']>;
 
 export interface CustomersPort {
   list(query: CustomerListQuery, signal?: AbortSignal): Promise<CustomerPage>;

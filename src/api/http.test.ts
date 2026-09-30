@@ -154,11 +154,11 @@ describe('every request', () => {
       return HttpResponse.json({ items: [], totalCount: 0, pageNumber: 1, pageSize: 25 });
     }));
 
-    await http.get('/api/customers', { query: { SearchTerm: 'russo', PageNumber: 2, IncludeInactive: undefined } });
+    await http.get('/api/customers', { query: { searchTerm: 'russo', pageNumber: 2, includeInactive: undefined } });
 
     expect(seen?.headers.get('Authorization')).toBe('Bearer valid');
     expect(seen?.credentials).toBe('include');
-    expect(new URL(seen!.url).search).toBe('?SearchTerm=russo&PageNumber=2');
+    expect(new URL(seen!.url).search).toBe('?searchTerm=russo&pageNumber=2');
   });
 
   it('sends no bearer header to anonymous endpoints even when signed in', async () => {

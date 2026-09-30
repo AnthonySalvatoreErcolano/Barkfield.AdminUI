@@ -19,6 +19,8 @@ change.** Its contract is in `contracts/`.
 2. **`contracts/PAGES.md`** — every screen, the endpoints feeding it, and the domain vocabulary.
 3. **`contracts/openapi.json`** — the machine contract, 91 paths. Read it through a generator, not
    by eye.
+4. **`design/ui-kit/`** — the visual reference. Read it before building any component, and read
+   step 7 below before deciding what to do with it.
 
 ## Stack
 
@@ -27,7 +29,8 @@ change.** Its contract is in `contracts/`.
   fetching cannot see it. Using Next properly would mean re-architecting auth for no benefit on a
   screen behind a login that needs no SEO.
 - Dev server on **port 5173** — the API's development CORS config already allows that exact origin.
-- Routing, state and styling are your call. Prefer boring and few dependencies.
+- Routing and state are your call. Prefer boring and few dependencies.
+- **Styling comes from `design/ui-kit/`** — see step 7. Do not invent a visual language.
 
 ## Build in this order
 
@@ -126,7 +129,39 @@ Note the tradeoff and account for it: a port-level fake **bypasses `http.ts`**, 
 mapping never run against it. Test that separately — MSW at the fetch level is the right tool if you
 want the wrapper itself covered.
 
-### 7. Screens
+### 7. The design system, from `design/ui-kit/`
+
+`design/ui-kit/` holds HTML components and styling generated with Claude Design. **It is a visual
+reference, not the component library.** Two ways to get this wrong, and both are expensive:
+
+- ❌ Copying its markup into components. You inherit duplicated styles and markup with no reuse, and
+  changing a colour later means editing forty files.
+- ❌ Ignoring it and inventing your own look. Then the app does not match what was designed, and
+  reconciling it afterwards is a rewrite.
+
+Do this instead, **before the first screen**:
+
+1. **Read the kit and work out what it actually uses** — Tailwind utility classes, plain CSS, CSS
+   custom properties, something else. Adopt that approach and stay with it; do not mix two.
+2. **Extract the tokens to one place.** Colours, fonts and type scale, spacing, radii, shadows,
+   borders. One file. Every component reads from it, nothing hard-codes a hex value.
+3. **Build real React primitives** from the kit's components: Button, Input, Select, Checkbox, Table,
+   Badge, Card, Dialog, Toast, Spinner, EmptyState — whatever the kit covers. Typed props, no inline
+   styles.
+4. **Support both light and dark** if the kit does, through the tokens rather than per component.
+
+Then every screen composes primitives. A screen should never contain a raw hex colour, a font stack,
+or markup lifted from the kit.
+
+**The kit will not cover everything.** This app needs things a component kit usually omits: a dense
+paginated data table with an inline status selector per row (the procurement board), a printable
+layout (the prep sheet and the load list), and a stale-data banner (a pulled-back route). Build those
+**as new primitives using the kit's tokens**, so they look like they belong — not ad hoc inside a page.
+
+If something in the kit genuinely conflicts with what a screen needs, follow the kit's tokens and say
+so in your summary rather than quietly diverging.
+
+### 8. Screens
 
 From `PAGES.md`, in its order. §0 shell and login first.
 
@@ -181,7 +216,9 @@ Add only the port methods this screen needs. Do not build out other areas of the
 1. Extend src/api/ports.ts with what this screen calls, using the generated types.
 2. Implement it in src/api/live/ over http.ts.
 3. Implement it in src/api/fake/ with realistic data, including [THE FAILURE CASE FOR THIS SCREEN].
-4. Build the screen, gating controls on [PERMISSION STRINGS].
+4. Build the screen from the primitives in src/components, gating controls on [PERMISSION STRINGS].
+   If you need a primitive that does not exist yet, add it there using the design tokens — not inline
+   in the page.
 5. Check it against the running API, not only the fake.
 
 Watch out for: [THE SCREEN-SPECIFIC TRAP FROM PAGES.md]
@@ -202,6 +239,9 @@ obvious thing. From `PAGES.md`:
 | Subscriptions | Frequency is a number plus a unit, not a dropdown. Cancel is permanent |
 
 ## Suggested order
+
+The design pass (step 7) comes before any screen — the login page is the first thing that needs
+primitives, so there is no point deferring it.
 
 Shell and login first — it proves the whole auth path end to end.
 

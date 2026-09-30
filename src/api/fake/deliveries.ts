@@ -137,10 +137,13 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
       .sort((a, b) => Number(a.willGenerate) - Number(b.willGenerate) || a.customerName.localeCompare(b.customerName));
   };
 
-  const newDelivery = (customerId: string, subscriptionId: string | null, subscriptionName: string | null, date: string, method: number, lines: DeliveryLine[], notes: string | null) => {
+  const newDelivery = (customerId: string, sub: Seed['subscriptions'][number] | null, date: string, method: number, lines: DeliveryLine[], notes: string | null) => {
     const c = db.customers.find(x => x.id === customerId)!;
     const d: DeliveryDetail = recompute({
-      id: crypto.randomUUID(), subscriptionId, subscriptionName, customerId, customerName: c.fullName ?? `${c.firstName} ${c.lastName}`,
+      id: crypto.randomUUID(), subscriptionId: sub?.id ?? null, subscriptionName: sub?.name ?? null,
+      // The name, or the composed label for an unnamed subscription; null for a one-off.
+      subscriptionDisplayName: sub?.displayName ?? null, frequencyInterval: sub?.frequencyInterval ?? null, frequencyUnit: sub?.frequencyUnit ?? null,
+      customerId, customerName: c.fullName ?? `${c.firstName} ${c.lastName}`,
       scheduledFor: asDay(date), completedAt: null, status: DeliveryStatus.Scheduled as DeliveryDetail['status'],
       fulfillmentMethod: method as DeliveryDetail['fulfillmentMethod'], procurementStatus: 1 as DeliveryDetail['procurementStatus'],
       paymentStatus: PaymentStatus.NotCharged as DeliveryDetail['paymentStatus'], paymentAttemptCount: 0,
@@ -214,7 +217,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         const s = db.subscriptions.find(x => x.id === candidate.subscriptionId)!;
         const items = db.subscriptionItems.get(s.id) ?? [];
         const lines = items.map(it => makeLine(product(it.productId), it.quantity, DeliveryLineSource.Recurring, s.id));
-        created.push(newDelivery(s.customerId, s.id, s.name, date, s.fulfillmentMethod, lines, null).id);
+        created.push(newDelivery(s.customerId, s, date, s.fulfillmentMethod, lines, null).id);
         if (candidate.resumingFromPause) {
           resumed.push(s.id);
           s.status = SubscriptionStatus.Active as typeof s.status;
@@ -248,7 +251,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         if (!p.isActive) throw new ValidationError(`'${p.name}' has been discontinued and cannot be added to a delivery.`);
         return makeLine(p, l.quantity ?? 1, DeliveryLineSource.Manual, null);
       });
-      newDelivery(c.id, null, null, body.scheduledFor, method, lines, body.notes ?? null);
+      newDelivery(c.id, null, body.scheduledFor, method, lines, body.notes ?? null);
     },
 
     async sheet({ from, to }) {

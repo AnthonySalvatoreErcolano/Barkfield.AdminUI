@@ -55,19 +55,19 @@ export function createFakeCustomers(db: Seed, wait: () => Promise<void>): Custom
   return {
     async list(q) {
       await wait();
-      const term = q.SearchTerm?.trim().toLowerCase();
+      const term = q.searchTerm?.trim().toLowerCase();
       let rows = db.customers
-        .filter(c => q.IncludeInactive || c.isActive)
-        .filter(c => q.HasSquareAccount === undefined || c.isSyncedToSquare === q.HasSquareAccount)
-        .filter(c => !q.Email || c.email.toLowerCase() === q.Email.toLowerCase())
+        .filter(c => q.includeInactive || c.isActive)
+        .filter(c => q.hasSquareAccount === undefined || c.isSyncedToSquare === q.hasSquareAccount)
+        .filter(c => !q.email || c.email.toLowerCase() === q.email.toLowerCase())
         .filter(c => !term || [c.firstName, c.lastName, c.email, c.phoneNumber ?? ''].some(v => v.toLowerCase().includes(term)))
         .map(toListItem);
       const allowed = SORT_KEYS['/api/customers'];
-      const key = (allowed.keys as readonly string[]).includes(q.SortBy ?? '') ? q.SortBy! : allowed.default;
-      rows = rows.sort((a, b) => sortValue(a, key).localeCompare(sortValue(b, key)) * (q.SortDescending ? -1 : 1));
-      const pageSize = Math.min(Math.max(Number(q.PageSize ?? 25), 1), 200);
+      const key = (allowed.keys as readonly string[]).includes(q.sortBy ?? '') ? q.sortBy! : allowed.default;
+      rows = rows.sort((a, b) => sortValue(a, key).localeCompare(sortValue(b, key)) * (q.sortDescending ? -1 : 1));
+      const pageSize = Math.min(Math.max(Number(q.pageSize ?? 25), 1), 200);
       const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-      const pageNumber = Math.max(Number(q.PageNumber ?? 1), 1);
+      const pageNumber = Math.max(Number(q.pageNumber ?? 1), 1);
       return {
         items: rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize),
         totalCount: rows.length, pageNumber, pageSize, totalPages,

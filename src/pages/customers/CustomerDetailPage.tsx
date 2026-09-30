@@ -294,7 +294,7 @@ function DeliveriesTab({ customerId }: { customerId: string }) {
         empty={data ? 'No deliveries yet.' : 'Loading…'}
         columns={[
           { key: 'date', header: 'Day', render: d => formatDay(d.scheduledFor) },
-          { key: 'sub', header: 'Subscription', render: d => d.isOneOff ? 'One-off' : d.subscriptionName ?? 'Unnamed subscription' },
+          { key: 'sub', header: 'Subscription', render: d => d.isOneOff ? 'One-off' : d.subscriptionDisplayName ?? d.subscriptionName },
           { key: 'status', header: 'Status', render: d => <DeliveryStatusBadge status={d.status} /> },
           { key: 'paid', header: 'Payment', render: d => <PaymentStatusBadge status={d.paymentStatus} /> },
           {

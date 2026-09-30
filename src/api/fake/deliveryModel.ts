@@ -72,7 +72,8 @@ export function recompute(d: DeliveryDetail): DeliveryDetail {
 
 export function toDeliveryListItem(d: DeliveryDetail): DeliveryListItem {
   return {
-    id: d.id, subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName, customerId: d.customerId, customerName: d.customerName,
+    id: d.id, subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName, subscriptionDisplayName: d.subscriptionDisplayName,
+    frequencyInterval: d.frequencyInterval, frequencyUnit: d.frequencyUnit, customerId: d.customerId, customerName: d.customerName,
     scheduledFor: d.scheduledFor, completedAt: d.completedAt, status: d.status, statusName: d.statusName,
     fulfillmentMethod: d.fulfillmentMethod, fulfillmentMethodName: d.fulfillmentMethodName,
     procurementStatus: d.procurementStatus, procurementStatusName: d.procurementStatusName,

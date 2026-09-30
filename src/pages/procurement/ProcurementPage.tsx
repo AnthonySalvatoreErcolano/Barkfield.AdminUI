@@ -202,8 +202,7 @@ function LinesView({ range, list, canPack, writes, productFilter, onOpenDelivery
       render: l => (
         <div>
           <Link to={`/deliveries/${l.deliveryId}`} onClick={e => e.stopPropagation()} style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{l.customerName}</Link>
-          {/* Null for an unnamed subscription AND for a one-off; this DTO has no flag to tell them apart, so say nothing. */}
-          {l.subscriptionName ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{l.subscriptionName}</div> : null}
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{l.isOneOff ? 'One-off' : l.subscriptionDisplayName ?? l.subscriptionName}</div>
         </div>
       ),
     },

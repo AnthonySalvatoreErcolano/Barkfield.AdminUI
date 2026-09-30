@@ -44,8 +44,8 @@ export function NewOneOffDeliveryPage() {
   const [error, setError] = useState<string | null>(null);
 
   const customers = useQuery({
-    queryKey: customerKeys.list({ SearchTerm: search || undefined, PageSize: 8 }),
-    queryFn: ({ signal }) => api.customers.list({ SearchTerm: search.trim() || undefined, PageSize: 8 }, signal),
+    queryKey: customerKeys.list({ searchTerm: search || undefined, pageSize: 8 }),
+    queryFn: ({ signal }) => api.customers.list({ searchTerm: search.trim() || undefined, pageSize: 8 }, signal),
     enabled: !customer,
   });
   // Preselect from ?customerId= (e.g. arriving from a customer record).

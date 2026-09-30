@@ -229,7 +229,8 @@ export function createSeed(): Seed {
         });
         return recompute({
           // The API sends null here for an unnamed subscription — the composed label is only on the subscription DTOs.
-          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: plan.name, customerId: id, customerName: `${p.first} ${p.last}`,
+          id: uuid('de11e000'), subscriptionId: subId, subscriptionName: plan.name, subscriptionDisplayName: displayName,
+          frequencyInterval: plan.every, frequencyUnit: plan.unit as DeliveryDetail['frequencyUnit'], customerId: id, customerName: `${p.first} ${p.last}`,
           scheduledFor: day(when), completedAt: null, status: DeliveryStatus.Scheduled as DeliveryDetail['status'],
           fulfillmentMethod: method, procurementStatus: 1 as DeliveryDetail['procurementStatus'],
           paymentStatus: PaymentStatus.NotCharged as DeliveryDetail['paymentStatus'], paymentAttemptCount: 0,

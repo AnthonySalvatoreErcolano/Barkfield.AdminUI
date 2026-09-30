@@ -73,7 +73,7 @@ function DeliveryView({ delivery: d }: { delivery: DeliveryDetail }) {
     <div>
       <PageHeader
         title={d.customerName}
-        eyebrow={`${formatDay(d.scheduledFor, 'long')} · ${d.isOneOff ? 'One-off delivery' : d.subscriptionName ?? 'Unnamed subscription'}`}
+        eyebrow={`${formatDay(d.scheduledFor, 'long')} · ${d.isOneOff ? 'One-off delivery' : d.subscriptionDisplayName ?? d.subscriptionName ?? ''}`}
         actions={<>
           {canPack ? (
             <Can call="POST /api/deliveries/{deliveryId}/pack">

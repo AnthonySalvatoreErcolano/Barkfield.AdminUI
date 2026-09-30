@@ -119,7 +119,9 @@ export function createFakeProcurement(db: Seed, wait: () => Promise<void>): Proc
       await wait();
       let items: ProcurementLine[] = scoped(q).map(({ d, l }) => ({
         deliveryId: d.id, lineId: l.id, scheduledFor: d.scheduledFor, customerId: d.customerId, customerName: d.customerName,
-        subscriptionName: d.subscriptionName, productId: l.productId, productName: l.productName, quantity: l.quantity,
+        subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName, subscriptionDisplayName: d.subscriptionDisplayName,
+        frequencyInterval: d.frequencyInterval, frequencyUnit: d.frequencyUnit, isOneOff: d.isOneOff,
+        productId: l.productId, productName: l.productName, quantity: l.quantity,
         quantityReceived: l.quantityReceived, orderStatus: l.orderStatus, orderStatusName: l.orderStatusName,
         substitutedWithProductName: l.substitutedWithProductName, packingName: l.packingName,
         deliveryProcurementStatus: d.procurementStatus, deliveryStatus: d.status, fulfillmentMethod: d.fulfillmentMethod,

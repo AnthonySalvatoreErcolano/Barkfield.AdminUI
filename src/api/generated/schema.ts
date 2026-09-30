@@ -358,16 +358,14 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    EffectiveSortBy?: string;
-                    Email?: string;
-                    HasSquareAccount?: boolean;
-                    IncludeInactive?: boolean;
-                    PageNumber?: number;
-                    PageSize?: number;
-                    SearchTerm?: string;
-                    Skip?: number;
-                    SortBy?: string;
-                    SortDescending?: boolean;
+                    email?: string;
+                    hasSquareAccount?: boolean;
+                    includeInactive?: boolean;
+                    pageNumber?: number;
+                    pageSize?: number;
+                    searchTerm?: string;
+                    sortBy?: string;
+                    sortDescending?: boolean;
                 };
                 header?: never;
                 path?: never;
@@ -2470,8 +2468,8 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: {
-                    date?: string;
+                query: {
+                    date: string;
                 };
                 header?: never;
                 path?: never;
@@ -2629,8 +2627,8 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: {
-                    from?: string;
+                query: {
+                    from: string;
                     to?: string;
                 };
                 header?: never;
@@ -3263,9 +3261,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: {
+                query: {
                     customerId?: string;
-                    from?: string;
+                    from: string;
                     fulfillmentMethod?: components["schemas"]["FulfillmentMethod"];
                     includeClosed?: boolean;
                     orderStatus?: components["schemas"]["LineOrderStatus"];
@@ -3276,7 +3274,7 @@ export interface paths {
                     searchTerm?: string;
                     sortBy?: string;
                     sortDescending?: boolean;
-                    to?: string;
+                    to: string;
                 };
                 header?: never;
                 path?: never;
@@ -3387,9 +3385,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: {
+                query: {
                     customerId?: string;
-                    from?: string;
+                    from: string;
                     fulfillmentMethod?: components["schemas"]["FulfillmentMethod"];
                     includeClosed?: boolean;
                     orderStatus?: components["schemas"]["LineOrderStatus"];
@@ -3400,7 +3398,7 @@ export interface paths {
                     searchTerm?: string;
                     sortBy?: string;
                     sortDescending?: boolean;
-                    to?: string;
+                    to: string;
                 };
                 header?: never;
                 path?: never;
@@ -5677,15 +5675,13 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    EffectiveSortBy?: string;
-                    IncludeInactive?: boolean;
-                    PageNumber?: number;
-                    PageSize?: number;
-                    RoleId?: string;
-                    SearchTerm?: string;
-                    Skip?: number;
-                    SortBy?: string;
-                    SortDescending?: boolean;
+                    includeInactive?: boolean;
+                    pageNumber?: number;
+                    pageSize?: number;
+                    roleId?: string;
+                    searchTerm?: string;
+                    sortBy?: string;
+                    sortDescending?: boolean;
                 };
                 header?: never;
                 path?: never;
@@ -6386,6 +6382,9 @@ export interface components {
             effectiveServiceDurationMinutes: number;
             externalOrderId: null | string;
             failureReason: null | string;
+            /** Format: int32 */
+            frequencyInterval: null | number;
+            frequencyUnit: null | components["schemas"]["FrequencyUnit"];
             fulfillmentMethod: components["schemas"]["FulfillmentMethod"];
             fulfillmentMethodName: null | string;
             hasPaid: boolean;
@@ -6430,6 +6429,7 @@ export interface components {
             squareReceiptUrl: null | string;
             status: components["schemas"]["DeliveryStatus"];
             statusName: null | string;
+            subscriptionDisplayName: null | string;
             /** Format: uuid */
             subscriptionId: null | string;
             subscriptionName: null | string;
@@ -6530,6 +6530,9 @@ export interface components {
             deliveryCity: null | string;
             externalOrderId: null | string;
             failureReason: null | string;
+            /** Format: int32 */
+            frequencyInterval: null | number;
+            frequencyUnit: null | components["schemas"]["FrequencyUnit"];
             fulfillmentMethod: components["schemas"]["FulfillmentMethod"];
             fulfillmentMethodName: null | string;
             hasPaid: boolean;
@@ -6563,6 +6566,7 @@ export interface components {
             squareReceiptUrl: null | string;
             status: components["schemas"]["DeliveryStatus"];
             statusName: null | string;
+            subscriptionDisplayName: null | string;
             /** Format: uuid */
             subscriptionId: null | string;
             subscriptionName: null | string;
@@ -7007,8 +7011,12 @@ export interface components {
             deliveryId: string;
             deliveryProcurementStatus: components["schemas"]["ProcurementStatus"];
             deliveryStatus: components["schemas"]["DeliveryStatus"];
+            /** Format: int32 */
+            frequencyInterval: null | number;
+            frequencyUnit: null | components["schemas"]["FrequencyUnit"];
             fulfillmentMethod: components["schemas"]["FulfillmentMethod"];
             isBlocking: boolean;
+            isOneOff: boolean;
             isUnresolved: boolean;
             /** Format: uuid */
             lineId: string;
@@ -7026,6 +7034,9 @@ export interface components {
             quantityReceived: number;
             /** Format: date-time */
             scheduledFor: string;
+            subscriptionDisplayName: null | string;
+            /** Format: uuid */
+            subscriptionId: null | string;
             subscriptionName: null | string;
             substitutedWithProductName: null | string;
         };
