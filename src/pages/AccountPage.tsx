@@ -1,20 +1,12 @@
 // My account (PAGES.md §0): who you are, and changing your own password.
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { errorMessage, ValidationError } from '../api/errors';
 import { PageHeader } from '../app/layout';
 import { useToast } from '../app/toast';
 import { useApi, useSession } from '../session/SessionProvider';
-import { Alert, Badge, Button, Card, Input } from '../ui';
+import { Alert, Badge, Button, Card, DetailField, Input } from '../ui';
 import { MIN_PASSWORD_LENGTH } from './auth/ResetPasswordPage';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 15 }}>{children}</div>
-    </div>
-  );
-}
 
 export function AccountPage() {
   const { user } = useSession();
@@ -24,13 +16,13 @@ export function AccountPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }}>
         <Card title="You">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Field label="Name">{user.name}</Field>
-            <Field label="Email">{user.email}</Field>
-            <Field label="Roles">
+            <DetailField label="Name">{user.name}</DetailField>
+            <DetailField label="Email">{user.email}</DetailField>
+            <DetailField label="Roles">
               <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
                 {user.roles.length ? user.roles.map(r => <Badge key={r.id} tone="brand">{r.name}</Badge>) : '—'}
               </span>
-            </Field>
+            </DetailField>
             <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)' }}>
               Roles are set by a manager on the Users screen. What each role can do is fixed in the system, not here.
             </p>

@@ -176,3 +176,29 @@ export function StatCard({ label, value, delta, trend, caption, icon, style }: S
     </div>
   );
 }
+
+// --- DetailField, Muted ---------------------------------------------------------------------------
+// A labelled read-only value, as used on detail cards (the kit's CustomerDetail "Field"), and the
+// quiet text for an empty value. Primitives so screens never restyle labels inline.
+
+const DETAIL_CSS = [
+'.br-detail__label{font-family:var(--font-display);font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}',
+'.br-detail__value{font-family:var(--font-body);font-size:15px;color:var(--text-primary)}',
+'.br-muted{color:var(--text-muted)}',
+].join('');
+
+export function DetailField({ label, children, style }: { label: ReactNode; children?: ReactNode; style?: CSSProperties }) {
+  injectStyles('detail', DETAIL_CSS);
+  return (
+    <div style={style}>
+      <div className="br-detail__label">{label}</div>
+      <div className="br-detail__value">{children}</div>
+    </div>
+  );
+}
+
+/** De-emphasised text — "None", "Any time", a dash for an empty value. */
+export function Muted({ children }: { children: ReactNode }) {
+  injectStyles('detail', DETAIL_CSS);
+  return <span className="br-muted">{children}</span>;
+}

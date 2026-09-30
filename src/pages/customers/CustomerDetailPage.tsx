@@ -1,6 +1,6 @@
 // Customer detail (PAGES.md §2): contact, delivery details, the Square link, and tabs for pets,
 // subscriptions and deliveries — each tab its own call, each gated on its own permission.
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../../api/errors';
@@ -12,7 +12,7 @@ import { DeliveryStatusBadge, PaymentStatusBadge, SubscriptionStatusBadge } from
 import { useToast } from '../../app/toast';
 import { formatDay, formatInstant, formatMoney, formatPhone, formatTime, plural } from '../../lib/format';
 import { Can, useApi, useSession } from '../../session/SessionProvider';
-import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, Dialog, Pagination, Tabs } from '../../ui';
+import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, DetailField, Dialog, Muted, Pagination, Tabs } from '../../ui';
 import { DeliveryDetailsDialog } from './DeliveryDetailsDialog';
 import { customerKeys } from './keys';
 
@@ -21,16 +21,7 @@ export interface CustomerDetailState {
   squareError?: string | null;
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 15 }}>{children}</div>
-    </div>
-  );
-}
 
-const muted = (text: string) => <span style={{ color: 'var(--text-muted)' }}>{text}</span>;
 
 export function CustomerDetailPage() {
   const { customerId = '' } = useParams();
@@ -99,14 +90,14 @@ function CustomerView({ customer }: { customer: CustomerDetail }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <Card title="Contact">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <Field label="Email"><a href={`mailto:${customer.email}`}>{customer.email}</a></Field>
-              <Field label="Phone">{customer.phoneNumber ? <a href={`tel:${customer.phoneNumber}`}>{formatPhone(customer.phoneNumber)}</a> : muted('None')}</Field>
-              <Field label="Address">
+              <DetailField label="Email"><a href={`mailto:${customer.email}`}>{customer.email}</a></DetailField>
+              <DetailField label="Phone">{customer.phoneNumber ? <a href={`tel:${customer.phoneNumber}`}>{formatPhone(customer.phoneNumber)}</a> : <Muted>None</Muted>}</DetailField>
+              <DetailField label="Address">
                 {customer.hasAddress
                   ? <>{customer.street}<br />{customer.city}, {customer.state} {customer.zipCode}</>
-                  : muted('None')}
-              </Field>
-              <Field label="Notes">{customer.notes ?? muted('None')}</Field>
+                  : <Muted>None</Muted>}
+              </DetailField>
+              <DetailField label="Notes">{customer.notes ?? <Muted>None</Muted>}</DetailField>
             </div>
           </Card>
           {tabs.length ? (
@@ -125,14 +116,14 @@ function CustomerView({ customer }: { customer: CustomerDetail }) {
               <Button variant="ghost" size="sm" iconLeft="pencil" aria-label="Edit delivery details" onClick={() => setEditingDelivery(true)} disabled={!customer.isActive}>Edit</Button>
             </Can>}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Field label="Access notes">{customer.accessNotes ?? muted('None')}</Field>
+              <DetailField label="Access notes">{customer.accessNotes ?? <Muted>None</Muted>}</DetailField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <Field label="Time at the door">{plural(customer.serviceDurationMinutes, 'minute')}</Field>
-                <Field label="Preferred window">
+                <DetailField label="Time at the door">{plural(customer.serviceDurationMinutes, 'minute')}</DetailField>
+                <DetailField label="Preferred window">
                   {customer.preferredWindowStart && customer.preferredWindowEnd
                     ? `${formatTime(customer.preferredWindowStart)}–${formatTime(customer.preferredWindowEnd)}`
-                    : muted('Any time')}
-                </Field>
+                    : <Muted>Any time</Muted>}
+                </DetailField>
               </div>
               <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)' }}>Read live at dispatch — changes reach tonight’s run.</p>
             </div>

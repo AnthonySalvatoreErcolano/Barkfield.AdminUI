@@ -13,22 +13,13 @@ import { LoadError } from '../../app/LoadError';
 import { DeliveryStatusBadge, FULFILLMENT_LABEL, LineStatusBadge, PaymentStatusBadge, ProcurementBadge } from '../../app/statusBadges';
 import { formatDay, formatInstant, formatMoney, formatPhone, formatTime, plural } from '../../lib/format';
 import { Can, useApi, useSession } from '../../session/SessionProvider';
-import { Alert, Badge, Breadcrumbs, Button, buttonClass, Card, DataTable, DropdownMenu, Icon, IconButton, Input, Tooltip, type DataTableColumn, type DropdownItem } from '../../ui';
+import { Alert, Badge, Breadcrumbs, Button, buttonClass, Card, DataTable, type DataTableColumn, DetailField, type DropdownItem, DropdownMenu, Icon, IconButton, Input, Muted, Tooltip } from '../../ui';
 import { deliveryKeys } from './keys';
 import { AddLineDialog, LineActionDialog } from './LineDialogs';
 import { CancelDialog, DeliveredDialog, FailedDialog, NotesDialog, StopDialog, type ManageDialog } from './ManageDialogs';
 import { useDeliveryWrites } from './useDeliveryWrites';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 15 }}>{children}</div>
-    </div>
-  );
-}
 
-const muted = (text: string) => <span style={{ color: 'var(--text-muted)' }}>{text}</span>;
 const LOCKED = 'Paid — the contents are fixed. Refund or adjust the payment in Square first.';
 
 export function DeliveryDetailPage() {
@@ -212,7 +203,7 @@ function LinesCard({ d, busy, canWorkLines, canEditContents, run, onLine, onAdd 
     },
     {
       key: 'received', header: 'Received', align: 'right',
-      render: l => l.orderStatus === LineOrderStatus.PartiallyReceived || l.orderStatus === LineOrderStatus.Received ? `${l.quantityReceived} of ${l.quantity}` : muted('—'),
+      render: l => l.orderStatus === LineOrderStatus.PartiallyReceived || l.orderStatus === LineOrderStatus.Received ? `${l.quantityReceived} of ${l.quantity}` : <Muted>—</Muted>,
     },
     { key: 'status', header: 'Status', render: l => <LineStatusBadge status={l.orderStatus} /> },
     { key: 'total', header: 'Line total', align: 'right', render: l => formatMoney(l.lineTotal) },
@@ -274,13 +265,13 @@ function StopCard({ d }: { d: DeliveryDetail }) {
   return (
     <Card title={local ? 'The stop' : FULFILLMENT_LABEL[d.fulfillmentMethod]} eyebrow={local ? 'For the driver' : undefined}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {local ? <Field label="Address">{d.deliveryStreet ? <>{d.deliveryStreet}<br />{d.deliveryCity}, {d.deliveryState} {d.deliveryZipCode}</> : muted('None')}</Field> : null}
-        <Field label="Phone">{d.customerPhoneNumber ? <a href={`tel:${d.customerPhoneNumber}`}>{formatPhone(d.customerPhoneNumber)}</a> : muted('None')}</Field>
+        {local ? <DetailField label="Address">{d.deliveryStreet ? <>{d.deliveryStreet}<br />{d.deliveryCity}, {d.deliveryState} {d.deliveryZipCode}</> : <Muted>None</Muted>}</DetailField> : null}
+        <DetailField label="Phone">{d.customerPhoneNumber ? <a href={`tel:${d.customerPhoneNumber}`}>{formatPhone(d.customerPhoneNumber)}</a> : <Muted>None</Muted>}</DetailField>
         {local ? <>
-          <Field label="Access notes">{d.accessNotes ?? muted('None')}</Field>
+          <DetailField label="Access notes">{d.accessNotes ?? <Muted>None</Muted>}</DetailField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="Window">{d.requestedWindowStart && d.requestedWindowEnd ? `${formatTime(d.requestedWindowStart)}–${formatTime(d.requestedWindowEnd)}` : muted('Any time')}</Field>
-            <Field label="Time at the door">{plural(d.effectiveServiceDurationMinutes, 'minute')}{d.serviceDurationMinutesOverride != null ? muted(' (this delivery)') : null}</Field>
+            <DetailField label="Window">{d.requestedWindowStart && d.requestedWindowEnd ? `${formatTime(d.requestedWindowStart)}–${formatTime(d.requestedWindowEnd)}` : <Muted>Any time</Muted>}</DetailField>
+            <DetailField label="Time at the door">{plural(d.effectiveServiceDurationMinutes, 'minute')}{d.serviceDurationMinutesOverride != null ? <Muted> (this delivery)</Muted> : null}</DetailField>
           </div>
           {d.sentToRoutingAt ? <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)' }}>Sent to Routific {formatInstant(d.sentToRoutingAt, true)}.</p> : null}
         </> : null}
@@ -294,12 +285,12 @@ function PaymentCard({ d }: { d: DeliveryDetail }) {
     <Card title="Payment" eyebrow="Square">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <Field label="Charged">{d.amountCharged != null ? formatMoney(d.amountCharged) : muted('Not yet')}</Field>
-          <Field label="Our estimate">{formatMoney(d.total)}</Field>
+          <DetailField label="Charged">{d.amountCharged != null ? formatMoney(d.amountCharged) : <Muted>Not yet</Muted>}</DetailField>
+          <DetailField label="Our estimate">{formatMoney(d.total)}</DetailField>
         </div>
         {d.paymentAttemptedAt ? <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)' }}>Last attempt {formatInstant(d.paymentAttemptedAt, true)} · {plural(d.paymentAttemptCount, 'attempt')}</p> : null}
         {d.squareReceiptUrl ? <a href={d.squareReceiptUrl} target="_blank" rel="noreferrer">Square receipt <Icon name="external-link" size={13} style={{ display: 'inline' }} /></a> : null}
-        {d.discounts.length ? <Field label="Discounts">{d.discounts.map(x => x.label ?? x.name).join(', ')}</Field> : null}
+        {d.discounts.length ? <DetailField label="Discounts">{d.discounts.map(x => x.label ?? x.name).join(', ')}</DetailField> : null}
       </div>
     </Card>
   );
