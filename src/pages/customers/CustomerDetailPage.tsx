@@ -13,6 +13,7 @@ import { useToast } from '../../app/toast';
 import { formatDay, formatInstant, formatMoney, formatPhone, formatTime, plural } from '../../lib/format';
 import { Can, useApi, useSession } from '../../session/SessionProvider';
 import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, DetailField, Dialog, Muted, Pagination, Tabs } from '../../ui';
+import { NextDelivery } from '../subscriptions/SubscriptionsListPage';
 import { DeliveryDetailsDialog } from './DeliveryDetailsDialog';
 import { customerKeys } from './keys';
 
@@ -244,6 +245,7 @@ function PetsTab({ customer }: { customer: CustomerDetail }) {
 
 function SubscriptionsTab({ customerId }: { customerId: string }) {
   const api = useApi();
+  const navigate = useNavigate();
   const [showCanceled, setShowCanceled] = useState(false);
   const { data, error, refetch } = useQuery({
     queryKey: [...customerKeys.subscriptions(customerId), showCanceled],
@@ -253,15 +255,19 @@ function SubscriptionsTab({ customerId }: { customerId: string }) {
   if (error) return <LoadError error={error} onRetry={() => refetch()} what="subscriptions" />;
   return (
     <Card flush title={data ? plural(data.length, 'subscription') : 'Subscriptions'}
-      actions={<Chip size="sm" selected={showCanceled} onClick={() => setShowCanceled(!showCanceled)}>Include canceled</Chip>}>
+      actions={<>
+        <Chip size="sm" selected={showCanceled} onClick={() => setShowCanceled(!showCanceled)}>Include canceled</Chip>
+        <Can call="POST /api/subscriptions"><Button size="sm" variant="secondary" iconLeft="plus" onClick={() => navigate(`/subscriptions/new?customerId=${customerId}`)}>New subscription</Button></Can>
+      </>}>
       <DataTable
         rows={data ?? []} rowKey={s => s.id}
+        onRowClick={s => navigate(`/subscriptions/${s.id}`)}
         empty={data ? 'No subscriptions.' : 'Loading…'}
         columns={[
           // A customer can have several on different cycles, so the name always shows.
           { key: 'name', header: 'Subscription', render: s => <strong>{s.displayName ?? s.name}</strong> },
           { key: 'freq', header: 'Every', render: s => s.frequencyLabel ?? '—' },
-          { key: 'next', header: 'Next delivery', render: s => formatDay(s.nextDeliveryDate) },
+          { key: 'next', header: 'Next delivery', render: s => <NextDelivery s={s} /> },
           { key: 'status', header: 'Status', render: s => <SubscriptionStatusBadge status={s.status} /> },
         ]}
       />

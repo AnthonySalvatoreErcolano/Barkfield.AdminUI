@@ -145,6 +145,89 @@ export function createLiveApi(): Api {
       chargeAll: date => http.post('/api/deliveries/charge-all', { body: { deliveryDate: toApiDay(date) }, timeoutMs: CHARGE_TIMEOUT_MS }),
       needsAttention: range => http.get('/api/deliveries/needs-attention', { query: range }),
     },
+    subscriptions: {
+      list: (query, signal) => http.get('/api/subscriptions', { query, signal }),
+      get: (subscriptionId, signal) => http.get('/api/subscriptions/{subscriptionId}', { path: { subscriptionId }, signal }),
+      // The API returns the new id in the 201 body; the spec omits that body, so the type says void.
+      create: async body => (await http.post('/api/subscriptions', { body })) as unknown as string,
+      async cancel(subscriptionId) {
+        await http.delete('/api/subscriptions/{subscriptionId}', { path: { subscriptionId } });
+      },
+      nextDelivery: subscriptionId => http.get('/api/subscriptions/{subscriptionId}/next-delivery', { path: { subscriptionId } }),
+      upcoming: (subscriptionId, cycles) => http.get('/api/subscriptions/{subscriptionId}/upcoming', { path: { subscriptionId }, query: { cycles } }),
+      async rename(subscriptionId, name) {
+        await http.put('/api/subscriptions/{subscriptionId}/name', { path: { subscriptionId }, body: { name } });
+      },
+      async changeFrequency(subscriptionId, body) {
+        await http.put('/api/subscriptions/{subscriptionId}/frequency', { path: { subscriptionId }, body });
+      },
+      async changeFulfillment(subscriptionId, fulfillmentMethod) {
+        await http.put('/api/subscriptions/{subscriptionId}/fulfillment', { path: { subscriptionId }, body: { fulfillmentMethod } });
+      },
+      async reschedule(subscriptionId, nextDeliveryDate) {
+        await http.put('/api/subscriptions/{subscriptionId}/schedule', { path: { subscriptionId }, body: { nextDeliveryDate: toApiDay(nextDeliveryDate) } });
+      },
+      async skip(subscriptionId) {
+        await http.post('/api/subscriptions/{subscriptionId}/skip', { path: { subscriptionId } });
+      },
+      async activate(subscriptionId) {
+        await http.post('/api/subscriptions/{subscriptionId}/activate', { path: { subscriptionId } });
+      },
+      async pause(subscriptionId, resumeOn) {
+        await http.post('/api/subscriptions/{subscriptionId}/pause', { path: { subscriptionId }, body: { resumeOn: resumeOn ? toApiDay(resumeOn) : null } });
+      },
+      async resume(subscriptionId) {
+        await http.post('/api/subscriptions/{subscriptionId}/resume', { path: { subscriptionId } });
+      },
+      async addItem(subscriptionId, body) {
+        await http.post('/api/subscriptions/{subscriptionId}/items', { path: { subscriptionId }, body });
+      },
+      async changeItemQuantity(subscriptionId, productId, quantity) {
+        await http.put('/api/subscriptions/{subscriptionId}/items/{productId}', { path: { subscriptionId, productId }, body: { quantity } });
+      },
+      async removeItem(subscriptionId, productId) {
+        await http.delete('/api/subscriptions/{subscriptionId}/items/{productId}', { path: { subscriptionId, productId } });
+      },
+      async addAddOn(subscriptionId, body) {
+        await http.post('/api/subscriptions/{subscriptionId}/add-ons', { path: { subscriptionId }, body });
+      },
+      async changeAddOnQuantity(subscriptionId, addOnId, quantity) {
+        await http.put('/api/subscriptions/{subscriptionId}/add-ons/{addOnId}', { path: { subscriptionId, addOnId }, body: { quantity } });
+      },
+      async removeAddOn(subscriptionId, addOnId) {
+        await http.delete('/api/subscriptions/{subscriptionId}/add-ons/{addOnId}', { path: { subscriptionId, addOnId } });
+      },
+      async addRotationGroup(subscriptionId, name) {
+        await http.post('/api/subscriptions/{subscriptionId}/rotation-groups', { path: { subscriptionId }, body: { name } });
+      },
+      async renameRotationGroup(subscriptionId, groupId, name) {
+        await http.put('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}', { path: { subscriptionId, groupId }, body: { name } });
+      },
+      async removeRotationGroup(subscriptionId, groupId) {
+        await http.delete('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}', { path: { subscriptionId, groupId } });
+      },
+      async pauseRotationGroup(subscriptionId, groupId) {
+        await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/pause', { path: { subscriptionId, groupId } });
+      },
+      async resumeRotationGroup(subscriptionId, groupId) {
+        await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/resume', { path: { subscriptionId, groupId } });
+      },
+      async addRotationItem(subscriptionId, groupId, body) {
+        await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/items', { path: { subscriptionId, groupId }, body });
+      },
+      async changeRotationItemQuantity(subscriptionId, groupId, itemId, quantity) {
+        await http.put('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/items/{itemId}', { path: { subscriptionId, groupId, itemId }, body: { quantity } });
+      },
+      async removeRotationItem(subscriptionId, groupId, itemId) {
+        await http.delete('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/items/{itemId}', { path: { subscriptionId, groupId, itemId } });
+      },
+      async reorderRotation(subscriptionId, groupId, itemIdsInOrder) {
+        await http.put('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/order', { path: { subscriptionId, groupId }, body: { itemIdsInOrder } });
+      },
+      async jumpTo(subscriptionId, groupId, itemId) {
+        await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/jump-to/{itemId}', { path: { subscriptionId, groupId, itemId } });
+      },
+    },
     procurement: {
       products: (query, signal) => http.get('/api/procurement/products', { query, signal }),
       lines: (query, signal) => http.get('/api/procurement/lines', { query, signal }),

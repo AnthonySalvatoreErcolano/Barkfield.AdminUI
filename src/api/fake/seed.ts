@@ -11,6 +11,7 @@
 import { DeliveryLineSource, DeliveryStatus, FrequencyUnit, FulfillmentMethod, LineOrderStatus, PaymentStatus, PetType, SubscriptionStatus } from '../generated/enums';
 import type { CustomerDetail, DeliveryDetail, Pet, Product, SquareCandidate, SubscriptionListItem } from '../ports';
 import { makeLine, recompute } from './deliveryModel';
+import { frequencyLabel, recount, type AddOnState, type ItemState, type RotationState } from './subscriptionModel';
 
 // The seed is laid out around the viewer's own today (as a UTC-midnight date-only value, the way the API
 // sends dates), so a demo opened next week still has a busy day to show.
@@ -103,7 +104,10 @@ export interface Seed {
   pets: Pet[];
   subscriptions: SubscriptionListItem[];
   /** What each subscription ships, per cycle. */
-  subscriptionItems: Map<string, Array<{ productId: string; quantity: number }>>;
+  subscriptionItems: Map<string, ItemState[]>;
+  /** Rotation groups and add-ons per subscription (see subscriptionModel.ts). */
+  rotationGroups: Map<string, RotationState[]>;
+  addOns: Map<string, AddOnState[]>;
   products: Product[];
   deliveries: DeliveryDetail[];
   /** People in Square's directory — some already ours, some not yet. */
@@ -133,7 +137,9 @@ export function createSeed(): Seed {
   const customers: CustomerDetail[] = [];
   const pets: Pet[] = [];
   const subscriptions: SubscriptionListItem[] = [];
-  const subscriptionItems = new Map<string, Array<{ productId: string; quantity: number }>>();
+  const subscriptionItems = new Map<string, ItemState[]>();
+  const rotationGroups = new Map<string, RotationState[]>();
+  const addOns = new Map<string, AddOnState[]>();
   const deliveries: DeliveryDetail[] = [];
 
   const products: Product[] = CATALOG.map(([name, price, active = true], i) => ({
@@ -181,10 +187,12 @@ export function createSeed(): Seed {
       const status = (plan.status ?? SubscriptionStatus.Active) as SubscriptionListItem['status'];
       const method = (plan.method ?? FulfillmentMethod.LocalDelivery) as SubscriptionListItem['fulfillmentMethod'];
       const unitName = { 1: 'day', 2: 'week', 3: 'month' }[plan.unit]!;
-      const label = plan.every === 1 ? `Every ${unitName}` : `Every ${plan.every} ${unitName}s`;
+      const label = frequencyLabel(plan.every, plan.unit); // the API's OrderFrequency.ToString()
+      void unitName;
       const cycleDays = plan.unit === FrequencyUnit.Days ? plan.every : plan.unit === FrequencyUnit.Weeks ? plan.every * 7 : plan.every * 30;
       const petNames = customerPets.map(x => x.name).join(' & ');
-      const displayName = plan.name ?? `${petNames || p.first} — ${label.toLowerCase()}`;
+      void petNames;
+      const displayName = plan.name ?? label; // unnamed subscriptions are called by their cadence
 
       // What ships each cycle. Tess Nolan's box has four lines — the delivery PAGES.md uses to explain
       // why adjacent rows on the procurement board 409 against each other.
@@ -196,7 +204,7 @@ export function createSeed(): Seed {
              { productId: byName('Open Farm Lamb').id, quantity: 1 }, { productId: byName('Wild Salmon Oil').id, quantity: 1 }]
           : [{ productId: (isCat ? catFood[i % 2] : food[i % food.length])!.id, quantity: 1 },
              ...(i % 3 === 0 || p.first === 'Kate' ? [{ productId: extras[i % extras.length]!.id, quantity: 1 + (i % 2) }] : [])];
-      subscriptionItems.set(subId, items);
+      subscriptionItems.set(subId, items.map(it => ({ ...it, id: uuid('17e50000'), createdAt: created })));
       items.forEach(it => { products.find(x => x.id === it.productId)!.subscriptionUsageCount++; });
 
       const eligibleToday = customer.isActive && status === SubscriptionStatus.Active && (hasAddress || method !== FulfillmentMethod.LocalDelivery)
@@ -318,5 +326,28 @@ export function createSeed(): Seed {
     { squareCustomerId: 'SQ7003', firstName: 'Robert', lastName: 'Hale', email: 'rob.hale@example.com', phoneNumber: null },
   ];
 
-  return { customers, pets, subscriptions, subscriptionItems, products, deliveries, squareDirectory };
+  const seed: Seed = { customers, pets, subscriptions, subscriptionItems, rotationGroups, addOns, products, deliveries, squareDirectory };
+
+  // Rotation groups: Daniella's protein rotation (salmon up next), and Jo's treat rotation, paused.
+  const subOf = (customer: string, name?: string) =>
+    subscriptions.find(x => x.customerName === customer && (name === undefined || x.name === name));
+  const group = (name: string, productNames: string[], position: number, isActive = true): RotationState => ({
+    id: uuid('507a7100'), name, position, isActive, createdAt: instant(-120), updatedAt: null,
+    items: productNames.map((n, i) => ({ id: uuid('507a7110'), productId: byName(n).id, quantity: 1, sequenceOrder: i + 1, createdAt: instant(-120) })),
+  });
+  const daniella = subOf('Daniella Russo', 'Biscuit’s food');
+  if (daniella) rotationGroups.set(daniella.id, [group('Protein rotation', ['Open Farm Lamb', 'Open Farm Wild Salmon', 'Raw Bistro Beef'], 1)]);
+  const jo = subOf('Jo Fitzgerald');
+  if (jo) rotationGroups.set(jo.id, [group('Treat rotation', ['Bully Sticks', 'Peanut Butter Biscuits', 'Pumpkin Bites'], 0, false)]);
+
+  // Add-ons: one waiting on Daniella's bakery box, and one already used (history).
+  const bakery = subOf('Daniella Russo', 'Bakery box');
+  if (bakery) {
+    addOns.set(bakery.id, [
+      { id: uuid('add0a000'), productId: byName('Birthday Pupcake').id, quantity: 1, note: 'Biscuit’s birthday — tuck a card in', createdAt: instant(-3), consumedAt: null },
+      { id: uuid('add0a000'), productId: byName('Pumpkin Bites').id, quantity: 2, note: null, createdAt: instant(-40), consumedAt: instant(-28) },
+    ]);
+  }
+  for (const sub of subscriptions) recount(seed, sub.id);
+  return seed;
 }

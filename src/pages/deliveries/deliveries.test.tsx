@@ -28,7 +28,7 @@ describe('worklist', () => {
     expect(within(table()).getAllByText('Ready to pack').length).toBeGreaterThan(0);
 
     // An unnamed subscription shows its composed label (subscriptionDisplayName), not a blank or 'one-off'.
-    expect(within(table()).getAllByText(/ — every \d+ weeks?$/).length).toBeGreaterThan(0);
+    expect(within(table()).getAllByText(/^every (\d+ )?(weeks?|months?|days?)$/).length).toBeGreaterThan(0);
     expect(within(table()).queryByText('One-off delivery')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Blocked' }));

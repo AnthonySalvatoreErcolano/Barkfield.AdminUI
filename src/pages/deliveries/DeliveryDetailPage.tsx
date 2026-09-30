@@ -10,10 +10,11 @@ import { DeliveryLineSource, DeliveryStatus, FulfillmentMethod, LineOrderStatus 
 import type { DeliveryDetail, DeliveryLine } from '../../api/ports';
 import { PageHeader } from '../../app/layout';
 import { LoadError } from '../../app/LoadError';
+import { QuantityEditor } from '../../app/QuantityEditor';
 import { DeliveryStatusBadge, FULFILLMENT_LABEL, LineStatusBadge, PaymentStatusBadge, ProcurementBadge } from '../../app/statusBadges';
 import { formatDay, formatInstant, formatMoney, formatPhone, formatTime, plural } from '../../lib/format';
 import { Can, useApi, useSession } from '../../session/SessionProvider';
-import { Alert, Badge, Breadcrumbs, Button, buttonClass, Card, DataTable, type DataTableColumn, DetailField, type DropdownItem, DropdownMenu, Icon, IconButton, Input, Muted, Tooltip } from '../../ui';
+import { Alert, Badge, Breadcrumbs, Button, buttonClass, Card, DataTable, type DataTableColumn, DetailField, type DropdownItem, DropdownMenu, Icon, IconButton, Muted, Tooltip } from '../../ui';
 import { deliveryKeys } from './keys';
 import { AddLineDialog, LineActionDialog } from './LineDialogs';
 import { CancelDialog, DeliveredDialog, FailedDialog, NotesDialog, StopDialog, type ManageDialog } from './ManageDialogs';
@@ -198,7 +199,7 @@ function LinesCard({ d, busy, canWorkLines, canEditContents, run, onLine, onAdd 
     {
       key: 'qty', header: 'Qty', align: 'right',
       render: l => canEditContents && !locked
-        ? <QuantityEditor line={l} disabled={busy} onSave={q => run(() => api.deliveries.changeQuantity(d.id, l.id, q), { title: 'Quantity changed', message: 'That line’s procurement starts again.' })} />
+        ? <QuantityEditor value={l.quantity} label={`Quantity of ${l.productName}`} disabled={busy} onSave={q => run(() => api.deliveries.changeQuantity(d.id, l.id, q), { title: 'Quantity changed', message: 'That line’s procurement starts again.' })} />
         : l.quantity,
     },
     {
@@ -244,19 +245,6 @@ function LinesCard({ d, busy, canWorkLines, canEditContents, run, onLine, onAdd 
         <span>Estimated total <strong>{formatMoney(d.total)}</strong></span>
       </div>
     </Card>
-  );
-}
-
-function QuantityEditor({ line, disabled, onSave }: { line: DeliveryLine; disabled: boolean; onSave: (q: number) => Promise<unknown> }) {
-  const [value, setValue] = useState(String(line.quantity));
-  useEffect(() => setValue(String(line.quantity)), [line.quantity]);
-  const q = Number(value);
-  const valid = Number.isInteger(q) && q >= 1;
-  const commit = () => { if (valid && q !== line.quantity) void onSave(q); else setValue(String(line.quantity)); };
-  return (
-    <Input size="sm" type="number" min={1} value={value} disabled={disabled} aria-label={`Quantity of ${line.productName}`}
-      onChange={e => setValue(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
-      style={{ width: 76, marginLeft: 'auto' }} />
   );
 }
 

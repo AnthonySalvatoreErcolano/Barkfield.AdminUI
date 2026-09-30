@@ -11,6 +11,7 @@ import { createFakeCustomers } from './customers';
 import { createFakeDeliveries, createFakeProducts } from './deliveries';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
+import { createFakeSubscriptions } from './subscriptions';
 import { createSeed, type Seed } from './seed';
 
 /** The fake's sign-in password, for every seeded account. Shown on the login screen in fake mode. */
@@ -149,6 +150,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     products: createFakeProducts(db, wait),
     procurement: createFakeProcurement(db, wait),
     billing: createFakeBilling(db, wait),
+    subscriptions: createFakeSubscriptions(db, wait),
     fake: {
       db,
       expireSession() {

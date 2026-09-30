@@ -163,6 +163,59 @@ export interface BillingPort {
   needsAttention(range: { from?: string; to?: string }): Promise<ChargeAttentionItem[]>;
 }
 
+export type SubscriptionDetail = Schemas['SubscriptionDetailDto'];
+export type SubscriptionPage = Schemas['PagedResultOfSubscriptionListItemDto'];
+export type RotationGroup = Schemas['RotationGroupDto'];
+export type RotationItem = Schemas['RotationGroupItemDto'];
+export type SubscriptionAddOn = Schemas['SubscriptionAddOnDto'];
+export type DeliveryPreview = Schemas['DeliveryPreviewDto'];
+export type CreateSubscription = Schemas['CreateSubscriptionRequest'];
+export type SubscriptionListQuery = NonNullable<paths['/api/subscriptions']['get']['parameters']['query']>;
+
+export interface SubscriptionsPort {
+  list(query: SubscriptionListQuery, signal?: AbortSignal): Promise<SubscriptionPage>;
+  get(subscriptionId: string, signal?: AbortSignal): Promise<SubscriptionDetail>;
+  /** Created as a new sign-up; it starts delivering once activated. Resolves the new id. */
+  create(body: CreateSubscription): Promise<string>;
+  /** Permanent. A customer who comes back gets a new subscription. */
+  cancel(subscriptionId: string): Promise<void>;
+  nextDelivery(subscriptionId: string): Promise<DeliveryPreview>;
+  upcoming(subscriptionId: string, cycles: number): Promise<DeliveryPreview[]>;
+
+  rename(subscriptionId: string, name: string | null): Promise<void>;
+  /** Every N days/weeks/months. recalculateNextDelivery moves the next date to fit the new cycle. */
+  changeFrequency(subscriptionId: string, body: Schemas['ChangeFrequencyRequest']): Promise<void>;
+  changeFulfillment(subscriptionId: string, fulfillmentMethod: Schemas['FulfillmentMethod']): Promise<void>;
+  reschedule(subscriptionId: string, nextDeliveryDate: string): Promise<void>;
+  skip(subscriptionId: string): Promise<void>;
+  activate(subscriptionId: string): Promise<void>;
+  /** With a date, it resumes on that date; without one it is paused until someone resumes it. */
+  pause(subscriptionId: string, resumeOn: string | null): Promise<void>;
+  resume(subscriptionId: string): Promise<void>;
+
+  addItem(subscriptionId: string, body: Schemas['AddSubscriptionItemRequest']): Promise<void>;
+  changeItemQuantity(subscriptionId: string, productId: string, quantity: number): Promise<void>;
+  removeItem(subscriptionId: string, productId: string): Promise<void>;
+
+  /** One-off extras for the next delivery only; consumed when it is generated. */
+  addAddOn(subscriptionId: string, body: Schemas['AddAddOnRequest']): Promise<void>;
+  changeAddOnQuantity(subscriptionId: string, addOnId: string, quantity: number): Promise<void>;
+  removeAddOn(subscriptionId: string, addOnId: string): Promise<void>;
+
+  addRotationGroup(subscriptionId: string, name: string): Promise<void>;
+  renameRotationGroup(subscriptionId: string, groupId: string, name: string): Promise<void>;
+  removeRotationGroup(subscriptionId: string, groupId: string): Promise<void>;
+  pauseRotationGroup(subscriptionId: string, groupId: string): Promise<void>;
+  resumeRotationGroup(subscriptionId: string, groupId: string): Promise<void>;
+  addRotationItem(subscriptionId: string, groupId: string, body: Schemas['AddRotationItemRequest']): Promise<void>;
+  changeRotationItemQuantity(subscriptionId: string, groupId: string, itemId: string, quantity: number): Promise<void>;
+  removeRotationItem(subscriptionId: string, groupId: string, itemId: string): Promise<void>;
+  /** Every item exactly once. What is up next stays up next. */
+  reorderRotation(subscriptionId: string, groupId: string, itemIdsInOrder: string[]): Promise<void>;
+  /** Out of turn: send this one next. */
+  jumpTo(subscriptionId: string, groupId: string, itemId: string): Promise<void>;
+}
+
 export interface ProductsPort {
   list(query: NonNullable<paths['/api/products']['get']['parameters']['query']>, signal?: AbortSignal): Promise<ProductPage>;
 }
@@ -175,4 +228,5 @@ export interface Api {
   products: ProductsPort;
   procurement: ProcurementPort;
   billing: BillingPort;
+  subscriptions: SubscriptionsPort;
 }

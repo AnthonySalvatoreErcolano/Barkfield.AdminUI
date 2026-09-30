@@ -19,6 +19,7 @@ const BUILT: Record<string, ComponentType> = {
   deliveries: lazy(() => import('../pages/deliveries/DeliveriesRoutes').then(m => ({ default: m.DeliveriesRoutes }))),
   procurement: lazy(() => import('../pages/procurement/ProcurementPage').then(m => ({ default: m.ProcurementPage }))),
   billing: lazy(() => import('../pages/billing/BillingPage').then(m => ({ default: m.BillingPage }))),
+  subscriptions: lazy(() => import('../pages/subscriptions/SubscriptionsRoutes').then(m => ({ default: m.SubscriptionsRoutes }))),
 };
 
 function RequireSession() {

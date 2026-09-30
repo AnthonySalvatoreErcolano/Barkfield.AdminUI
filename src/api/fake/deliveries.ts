@@ -10,6 +10,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { SORT_KEYS } from '../sortKeys';
 import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, LineAction, ProductsPort } from '../ports';
 import { makeLine, recompute, toDeliveryListItem } from './deliveryModel';
+import { completeCycle, manifest } from './subscriptionModel';
 import type { Seed } from './seed';
 
 const dateOnly = (iso: string) => iso.slice(0, 10);
@@ -119,7 +120,7 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
       .map(s => {
         const customer = db.customers.find(c => c.id === s.customerId)!;
         const alreadyGenerated = db.deliveries.some(d => d.subscriptionId === s.id && dateOnly(d.scheduledFor) === day && d.status !== DeliveryStatus.Canceled);
-        const lineCount = db.subscriptionItems.get(s.id)?.length ?? 0;
+        const lineCount = manifest(db, s.id).length;
         // The API's own order of reasons (GenerationModels.cs).
         const skipReason = alreadyGenerated ? 'A delivery already exists for this date.'
           : lineCount === 0 ? 'Nothing is scheduled to ship.'
@@ -215,9 +216,10 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
       const resumed: string[] = [];
       for (const candidate of due.filter(d => d.willGenerate)) {
         const s = db.subscriptions.find(x => x.id === candidate.subscriptionId)!;
-        const items = db.subscriptionItems.get(s.id) ?? [];
-        const lines = items.map(it => makeLine(product(it.productId), it.quantity, DeliveryLineSource.Recurring, s.id));
+        // The subscription's manifest: standing items, each active rotation's current item, pending add-ons.
+        const lines = manifest(db, s.id).map(m => makeLine(m.product, m.quantity, m.source, m.sourceId));
         created.push(newDelivery(s.customerId, s, date, s.fulfillmentMethod, lines, null).id);
+        completeCycle(db, s.id); // rotations move on, add-ons are used up
         if (candidate.resumingFromPause) {
           resumed.push(s.id);
           s.status = SubscriptionStatus.Active as typeof s.status;
