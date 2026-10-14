@@ -7,11 +7,19 @@ the right food to the right dog on the right day.
 
 ## The big picture in one minute
 
-Customers sign up for **standing orders** — "every 4 weeks, 2 bags of venison and a salmon oil." The
-admin turns those standing orders into **deliveries** on the right day, helps you **order and receive
-the stock**, **pack the boxes**, **charge the cards** through Square, and **send the day's stops to
-Routific** so a driver gets a route. When a box is delivered, the customer's next delivery date is set
-automatically.
+It starts when a customer signs up for **auto-ship**:
+
+1. **The customer signs up for auto-ship** — for example, "every 4 weeks, 2 bags of venison and a
+   salmon oil."
+2. **Staff create their customer profile** in the admin. It's linked to the customer's Square
+   profile, which is where their card lives.
+3. **Staff set up their subscription** — what they get and how often.
+4. **From then on it repeats on its own schedule.** When a delivery is due, the admin turns the
+   subscription into a **delivery** for that day, helps you **order and receive the stock**, **pack
+   the box**, **charge the card** through Square, and **send the stop to Routific** so a driver gets a
+   route.
+5. **When the box is delivered**, the customer's next delivery date is set automatically, and the
+   cycle starts again.
 
 Two outside services do part of the work:
 
@@ -19,6 +27,20 @@ Two outside services do part of the work:
   here. Cards are added or changed in Square, never here.
 - **Routific** builds the driving routes. You send it the day's packed boxes; a dispatcher plans the
   route there; the finished route comes back here as a load list.
+
+---
+
+## Setting up a new auto-ship customer
+
+| Step | What happens | Page |
+|---|---|---|
+| 1. Create the customer | Name, contact details, delivery address. The admin checks Square for an existing profile first and links to it, so there's never a duplicate | Customers → New customer |
+| 2. Add delivery details | Door notes (gate code, the dog), time at the door, preferred window — for the driver | The customer's page |
+| 3. Add their pets | Names, and any allergies | The customer's page → Pets |
+| 4. Make sure a card is on file | Cards are added in Square, on the customer's Square profile | Square |
+| 5. Create the subscription | What goes in each box and how often; then **Activate** it | Subscriptions → New subscription, or the customer's Subscriptions tab |
+
+Once the subscription is active, the customer comes up automatically on the day they're due.
 
 ---
 
@@ -112,7 +134,7 @@ each pet — they're what you check before a protein goes in a box.
 
 ### Subscriptions
 
-The standing orders.
+Each customer's auto-ship: what they get, and how often.
 
 Each subscription has:
 
@@ -336,7 +358,8 @@ Your own details, and where you change your password.
 
 ## Words used in the admin
 
-- **Subscription** — a customer's standing order.
+- **Auto-ship / Subscription** — the same thing: a customer's repeating order, with what goes in each
+  box and how often.
 - **Delivery** — one box for one customer on one day.
 - **Line** — one product in a box.
 - **Rotation** — products a customer takes turns through, one per delivery.
