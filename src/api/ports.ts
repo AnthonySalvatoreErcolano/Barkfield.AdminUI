@@ -280,11 +280,30 @@ export interface ProductsPort {
 }
 
 export type DispatchBoard = Schemas['DispatchBoardDto'];
+export type DispatchSendResult = Schemas['DispatchSendResult'];
+export type RouteListItem = Schemas['RouteListItemDto'];
+export type LoadList = Schemas['LoadListDto'];
+export type LoadListStop = Schemas['LoadListStopDto'];
+export type LoadListDelivery = Schemas['LoadListDeliveryDto'];
 
-/** The day's local deliveries against Routific. Grown with the Dispatch screen; the dashboard reads the board. */
+/**
+ * The day's local deliveries against Routific. Routes are built there, not here: we send orders, a
+ * dispatcher publishes a route, and it arrives by webhook. Routific calls can fail with a 502.
+ */
 export interface DispatchPort {
   /** Includes closed deliveries (a delivered stop is still part of the day); `statusLine` is ready to show. */
   board(date: string, signal?: AbortSignal): Promise<DispatchBoard>;
+  /**
+   * Push packed deliveries — the whole day, or just `deliveryIds` (ones packed after the first send).
+   * Already-sent ones are skipped, never resent: Routific has no idempotency key. Partial failure is a 200.
+   */
+  send(date: string, deliveryIds?: string[]): Promise<DispatchSendResult>;
+  /** Pull one out of Routific (a card that couldn't be fixed, a cancellation). It becomes sendable again. */
+  withdraw(deliveryId: string): Promise<void>;
+  /** Stops in LOADING order — the reverse of driving order. Render as given. */
+  loadList(routeId: string, signal?: AbortSignal): Promise<LoadList>;
+  /** Per route stop row (one delivery's boxes at a door), so a doorstep with two boxes needs two ticks. */
+  setStopLoaded(routeId: string, routeStopId: string, loaded: boolean): Promise<void>;
 }
 
 export interface Api {

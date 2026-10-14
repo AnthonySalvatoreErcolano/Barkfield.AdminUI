@@ -10,7 +10,7 @@ import { createFakeCustomers } from './customers';
 import { createFakeDeliveries } from './deliveries';
 import { createFakeProducts } from './products';
 import { createFakePets } from './pets';
-import { createFakeDispatch } from './dispatch';
+import { createFakeDispatch, type FakeRoutific } from './dispatch';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
@@ -27,6 +27,8 @@ export interface FakeControls {
   expireSession(): void;
   /** The fake's data, for tests that need to change something behind the screen's back. */
   db: Seed;
+  /** Routific's side: a dispatcher publishing or pulling back a route. */
+  routific: FakeRoutific;
 }
 
 // Fake mode is what gets shown to clients from a preview deployment. Remembering which demo account is
@@ -61,6 +63,8 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
           newPassword: ['The field newPassword must be a string with a minimum length of 12.'],
         })
       : null;
+
+  const dispatch = createFakeDispatch(db, wait, { autoPublish: options.latency !== false });
 
   return {
     auth: {
@@ -124,9 +128,10 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     procurement: createFakeProcurement(db, wait),
     billing: createFakeBilling(db, wait),
     subscriptions: createFakeSubscriptions(db, wait),
-    dispatch: createFakeDispatch(db, wait),
+    dispatch,
     fake: {
       db,
+      routific: dispatch.routific,
       expireSession() {
         setSignedIn(null);
         expiredListeners.forEach(l => l());

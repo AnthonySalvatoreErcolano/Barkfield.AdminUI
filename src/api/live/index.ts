@@ -3,8 +3,8 @@ import { clearAccessToken, configureHttp, http, refreshSessionWithin, setAccessT
 import type { Api } from '../ports';
 import { toApiDay } from '../../lib/dates';
 
-/** Charging goes to Square once per delivery; a day's run can take minutes. */
-const CHARGE_TIMEOUT_MS = 5 * 60_000;
+/** Charging goes to Square once per delivery, and sending to Routific once per order; a day can take minutes. */
+const UPSTREAM_TIMEOUT_MS = 5 * 60_000;
 
 export function createLiveApi(): Api {
   const expiredListeners = new Set<() => void>();
@@ -182,8 +182,8 @@ export function createLiveApi(): Api {
         await http.put('/api/deliveries/{deliveryId}/discounts', { path: { deliveryId }, body: { squareDiscountIds } });
       },
       // Real card payments: a long limit, because giving up early would not stop the charge.
-      charge: deliveryId => http.post('/api/deliveries/{deliveryId}/charge', { path: { deliveryId }, timeoutMs: CHARGE_TIMEOUT_MS }),
-      chargeAll: date => http.post('/api/deliveries/charge-all', { body: { deliveryDate: toApiDay(date) }, timeoutMs: CHARGE_TIMEOUT_MS }),
+      charge: deliveryId => http.post('/api/deliveries/{deliveryId}/charge', { path: { deliveryId }, timeoutMs: UPSTREAM_TIMEOUT_MS }),
+      chargeAll: date => http.post('/api/deliveries/charge-all', { body: { deliveryDate: toApiDay(date) }, timeoutMs: UPSTREAM_TIMEOUT_MS }),
       needsAttention: range => http.get('/api/deliveries/needs-attention', { query: range }),
     },
     subscriptions: {
@@ -270,6 +270,15 @@ export function createLiveApi(): Api {
     },
     dispatch: {
       board: (date, signal) => http.get('/api/dispatch', { query: { date: toApiDay(date) }, signal }),
+      // A push to Routific per order; give it time rather than abandon a send that is under way.
+      send: (date, deliveryIds) => http.post('/api/dispatch/send', { body: { date: toApiDay(date), deliveryIds: deliveryIds ?? null }, timeoutMs: UPSTREAM_TIMEOUT_MS }),
+      async withdraw(deliveryId) {
+        await http.post('/api/dispatch/deliveries/{deliveryId}/withdraw', { path: { deliveryId } });
+      },
+      loadList: (routeId, signal) => http.get('/api/dispatch/routes/{routeId}/load-list', { path: { routeId }, signal }),
+      async setStopLoaded(routeId, routeStopId, loaded) {
+        await http.put('/api/dispatch/routes/{routeId}/stops/{routeStopId}/loaded', { path: { routeId, routeStopId }, body: { loaded } });
+      },
     },
     procurement: {
       products: (query, signal) => http.get('/api/procurement/products', { query, signal }),

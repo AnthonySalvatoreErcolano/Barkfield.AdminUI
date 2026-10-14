@@ -21,6 +21,7 @@ import { billingKeys } from '../billing/keys';
 import { WorkCell } from '../deliveries/DeliveriesListPage';
 import { deliveryKeys } from '../deliveries/keys';
 import { procurementKeys } from '../procurement/keys';
+import { dispatchKeys } from '../dispatch/keys';
 
 export function DashboardPage() {
   const api = useApi();
@@ -53,7 +54,7 @@ export function DashboardPage() {
     enabled: canCall('GET /api/procurement/products'),
   });
   const dispatch = useQuery({
-    queryKey: ['dispatch', 'board', today],
+    queryKey: dispatchKeys.board(today),
     queryFn: ({ signal }) => api.dispatch.board(today, signal),
     enabled: canCall('GET /api/dispatch'),
   });
