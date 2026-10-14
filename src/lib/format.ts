@@ -18,6 +18,11 @@ export function formatDay(iso: string | null | undefined, style: 'short' | 'long
  * A real instant from the API. Many arrive with no zone at all ("2026-10-14T18:59:39.197" — read from
  * the database without one) but are UTC; JavaScript would read those as LOCAL time and show them hours
  * off. So a bare one is taken as UTC; one with Z or an offset is taken as written.
+ *
+ * NEVER for a calendar date (scheduledFor, nextDeliveryDate, lastDeliveryDate, pausedUntil, a route's
+ * scheduledDate, birthday): those also arrive zone-less ("2026-10-15T00:00:00") but are days, not
+ * moments — read as UTC they'd show a day early west of Greenwich. They go through formatDay/dayOf,
+ * which take the date part and build no instant at all.
  */
 export function parseInstant(iso: string): Date {
   return new Date(/(Z|[+-]\d\d:?\d\d)$/i.test(iso) ? iso : `${iso}Z`);

@@ -57,3 +57,12 @@ describe('instants', () => {
     expect(formatInstant('2026-10-15T02:30:00')).toBe('Oct 14, 2026'); // late evening local, the day before
   });
 });
+
+describe('calendar dates vs instants', () => {
+  // The API sends both zone-less. A delivery day must never move, whatever the zone (tests run UTC−4).
+  it('shows a delivery dated today on today, not yesterday', () => {
+    expect(formatDay('2026-10-15T00:00:00')).toBe('Thu, Oct 15');
+    expect(formatDay('2026-10-15T00:00:00', 'long')).toBe('Thursday, October 15, 2026');
+    expect(formatDay('2027-01-01T00:00:00')).toBe('Fri, Jan 1'); // a 1 January birthday stays 1 January
+  });
+});
