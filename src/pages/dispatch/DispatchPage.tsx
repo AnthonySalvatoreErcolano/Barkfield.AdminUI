@@ -26,6 +26,11 @@ import { dispatchKeys } from './keys';
 
 const timeOf = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '');
 
+/** Has a Routific order. The order id is what withdrawing needs, so it counts even without a sent time. */
+const isSent = (d: DeliveryListItem) => !!d.sentToRoutingAt || !!d.externalOrderId;
+/** Gone to Routific as far as the day is concerned: sent, or already on a route. */
+const isOnRoutific = (d: DeliveryListItem) => isSent(d) || d.status === DeliveryStatus.Routed || d.status === DeliveryStatus.OutForDelivery;
+
 export function DispatchPage() {
   const api = useApi();
   const navigate = useNavigate();
@@ -65,9 +70,10 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
   const [credentialError, setCredentialError] = useState<string | null>(null);
 
   const rows = board.deliveries;
-  const unsentPacked = rows.filter(d => !d.sentToRoutingAt && d.status === DeliveryStatus.Packed);
-  const unpacked = rows.filter(d => !d.sentToRoutingAt && d.status === DeliveryStatus.Scheduled);
-  const firstSend = board.sentCount === 0;
+  const unsentPacked = rows.filter(d => !isSent(d) && d.status === DeliveryStatus.Packed);
+  const unpacked = rows.filter(d => !isSent(d) && d.status === DeliveryStatus.Scheduled);
+  const sentCount = rows.filter(isOnRoutific).length;
+  const firstSend = sentCount === 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {credentialError ? (
@@ -76,7 +82,7 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
         </Alert>
       ) : null}
 
-      <StageBanner board={board} date={date}
+      <StageBanner board={board} date={date} notSent={rows.filter(d => !isOnRoutific(d) && !d.isClosed).length}
         action={<Can call="POST /api/dispatch/send">
           {unsentPacked.length ? (
             <Button variant={firstSend ? 'accent' : 'secondary'} iconLeft="route"
@@ -88,8 +94,8 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 14.5 }}>
         <Count label="Local deliveries" value={board.deliveryCount} />
-        <Count label="Sent to Routific" value={board.sentCount} />
-        <Count label="Not packed yet" value={board.notYetPackedCount} warn={board.notYetPackedCount > 0 && board.sentCount > 0} />
+        <Count label="Sent to Routific" value={sentCount} />
+        <Count label="Not packed yet" value={board.notYetPackedCount} warn={board.notYetPackedCount > 0 && sentCount > 0} />
         <Count label="Unpaid" value={board.unpaidCount} warn={board.unpaidCount > 0} />
         <Count label="Card refused" value={board.paymentFailedCount} danger={board.paymentFailedCount > 0} onClick={board.paymentFailedCount ? () => navigate(`/billing?date=${date}`) : undefined} />
       </div>
@@ -115,17 +121,18 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
             },
             {
               key: 'routing', header: 'Routific',
-              render: d => d.sentToRoutingAt ? <span>Sent {timeOf(d.sentToRoutingAt)}</span>
+              render: d => isSent(d) ? <span>{d.sentToRoutingAt ? `Sent ${timeOf(d.sentToRoutingAt)}` : 'Sent'}</span>
                 : d.isClosed ? <Muted>—</Muted>
                 : d.status === DeliveryStatus.Packed ? <Badge tone="warning">Not sent</Badge>
-                : <Muted>Waiting to be packed</Muted>,
+                : d.status === DeliveryStatus.Scheduled ? <Muted>Waiting to be packed</Muted>
+                : <Muted>On a route</Muted>,
             },
             {
               key: 'actions', header: '', align: 'right', width: 130,
               render: d => <span onClick={e => e.stopPropagation()}><Can call="POST /api/dispatch/send">
-                {d.sentToRoutingAt && !d.isClosed
+                {d.externalOrderId && !d.isClosed
                   ? <Button size="sm" variant="ghost" onClick={() => setWithdrawing(d)}>Withdraw</Button>
-                  : !d.sentToRoutingAt && d.status === DeliveryStatus.Packed && !firstSend
+                  : !isSent(d) && d.status === DeliveryStatus.Packed && !firstSend
                     ? <Button size="sm" variant="ghost" onClick={() => setSending({ ids: [d.id] })}>Send</Button>
                     : null}
               </Can></span>,
@@ -150,7 +157,7 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
   );
 }
 
-function StageBanner({ board, date, action }: { board: DispatchBoard; date: string; action: ReactNode }) {
+function StageBanner({ board, date, notSent, action }: { board: DispatchBoard; date: string; notSent: number; action: ReactNode }) {
   const stage = board.stage as number;
   const sentAt = board.firstSentAt ? timeOf(board.firstSentAt) : null;
   switch (stage) {
@@ -178,7 +185,7 @@ function StageBanner({ board, date, action }: { board: DispatchBoard; date: stri
       return (
         <Alert tone="success" title="Route published" action={action}>
           {board.statusLine} Load the van from the load list.
-          {board.unsentCount ? ` ${plural(board.unsentCount, 'delivery isn’t', 'deliveries aren’t')} on it — Routific won’t add orders to a published route, so sending more means the dispatcher re-plans.` : ''}
+          {notSent ? ` ${plural(notSent, 'delivery isn’t', 'deliveries aren’t')} on it — Routific won’t add orders to a published route, so sending more means the dispatcher re-plans.` : ''}
         </Alert>
       );
     case DispatchStage.ReadyToSend:
@@ -230,9 +237,9 @@ function SendDialog({ date, board, ids, onClose, onDone, onCredentialError }: {
     onError: err => { if (err instanceof CredentialError) onCredentialError(err.message); },
     onSettled: () => Promise.all([queryClient.invalidateQueries({ queryKey: dispatchKeys.all }), queryClient.invalidateQueries({ queryKey: deliveryKeys.all })]),
   });
-  const going = board.deliveries.filter(d => !d.sentToRoutingAt && d.status === DeliveryStatus.Packed && (!ids || ids.includes(d.id)));
+  const going = board.deliveries.filter(d => !isSent(d) && d.status === DeliveryStatus.Packed && (!ids || ids.includes(d.id)));
   const unpaid = going.filter(d => d.paymentStatus !== PaymentStatus.Paid);
-  const notGoing = ids ? [] : board.deliveries.filter(d => !d.sentToRoutingAt && d.status === DeliveryStatus.Scheduled);
+  const notGoing = ids ? [] : board.deliveries.filter(d => !isSent(d) && d.status === DeliveryStatus.Scheduled);
 
   return (
     <Dialog open size="md" onClose={send.isPending ? undefined : onClose}
