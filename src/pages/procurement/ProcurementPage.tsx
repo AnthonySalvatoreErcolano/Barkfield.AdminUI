@@ -28,6 +28,12 @@ import { useBoardWrites } from './useBoardWrites';
 type View = 'products' | 'lines';
 const num = (v: string) => (v === '' ? undefined : Number(v));
 
+/**
+ * Could "Receive all" find anything? Ordered units, or a part-received line — which the totals only show as
+ * pending + in hand falling short of the total (shorted lines do too, so this errs towards offering it).
+ */
+const hasReceivable = (p: ProcurementProduct) => p.orderedQuantity > 0 || p.pendingQuantity + p.receivedQuantity < p.totalQuantity;
+
 export function ProcurementPage() {
   const navigate = useNavigate();
   const { canCall } = useSession();
@@ -145,7 +151,7 @@ function ProductsView({ range, list, canPack, writes, onOpenLines }: {
               ...(canPack ? [
                 { divider: true as const },
                 { label: `Mark ${p.pendingQuantity} ordered…`, icon: 'shopping-bag' as const, disabled: !p.pendingQuantity || writes.busy, onSelect: () => setActing({ product: p, action: 'ordered' }) },
-                { label: 'Receive all…', icon: 'package' as const, disabled: writes.busy, onSelect: () => setActing({ product: p, action: 'receive' }) },
+                { label: 'Receive all…', icon: 'package' as const, disabled: !hasReceivable(p) || writes.busy, onSelect: () => setActing({ product: p, action: 'receive' }) },
                 { label: 'Out of stock…', icon: 'triangle-alert' as const, danger: true, disabled: p.isSettled || writes.busy, onSelect: () => setActing({ product: p, action: 'out-of-stock' }) },
               ] : []),
             ]} />
