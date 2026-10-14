@@ -148,8 +148,7 @@ export function createLiveApi(): Api {
     subscriptions: {
       list: (query, signal) => http.get('/api/subscriptions', { query, signal }),
       get: (subscriptionId, signal) => http.get('/api/subscriptions/{subscriptionId}', { path: { subscriptionId }, signal }),
-      // The API returns the new id in the 201 body; the spec omits that body, so the type says void.
-      create: async body => (await http.post('/api/subscriptions', { body })) as unknown as string,
+      create: body => http.post('/api/subscriptions', { body }), // 201 with the new id
       async cancel(subscriptionId) {
         await http.delete('/api/subscriptions/{subscriptionId}', { path: { subscriptionId } });
       },
