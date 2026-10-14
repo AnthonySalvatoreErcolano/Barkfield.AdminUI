@@ -48,7 +48,9 @@ export function useDeliveryWrites(deliveryId: string) {
     } catch (error) {
       const conflict = error instanceof ConflictError;
       const message = conflict
-        ? 'Someone else updated this delivery at the same moment, so your change wasn’t saved. It’s been reloaded below — check it, then make your change again.'
+        // Either cause of a 409: a save overlapping ours, or (notes, window, door time) a change made
+        // after this page loaded. The wording covers both.
+        ? 'Someone else changed this delivery, so your change wasn’t saved. It’s been reloaded below — check it, then make your change again.'
         : errorMessage(error);
       setProblem({ tone: conflict ? 'warning' : 'danger', title: conflict ? 'This delivery just changed' : 'That didn’t go through', message });
       return { ok: false, conflict, message };
