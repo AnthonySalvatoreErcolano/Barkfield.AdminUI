@@ -151,10 +151,14 @@ export interface DeliveriesPort {
   changeQuantity(deliveryId: string, lineId: string, quantity: number): Promise<void>;
   removeLine(deliveryId: string, lineId: string): Promise<void>;
 
-  /** delivery:manage — scheduling and outcomes. */
-  updateNotes(deliveryId: string, notes: string | null): Promise<void>;
-  setWindow(deliveryId: string, window: { start: string | null; end: string | null }): Promise<void>;
-  setServiceDuration(deliveryId: string, minutes: number | null): Promise<void>;
+  /**
+   * delivery:manage — scheduling and outcomes. These three submit a whole value, so they take the
+   * `revision` the form was built from: a stale one is a 409 instead of silently overwriting a
+   * colleague's change. Omitted, last write wins (API-CONTEXT §4).
+   */
+  updateNotes(deliveryId: string, notes: string | null, revision?: number): Promise<void>;
+  setWindow(deliveryId: string, window: { start: string | null; end: string | null }, revision?: number): Promise<void>;
+  setServiceDuration(deliveryId: string, minutes: number | null, revision?: number): Promise<void>;
   /** The manual override — normally completion arrives from Routific. */
   markDelivered(deliveryId: string, deliveredOn?: string): Promise<void>;
   markFailed(deliveryId: string, reason: string): Promise<void>;

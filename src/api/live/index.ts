@@ -139,14 +139,14 @@ export function createLiveApi(): Api {
       async removeLine(deliveryId, lineId) {
         await http.delete('/api/deliveries/{deliveryId}/lines/{lineId}', { path: { deliveryId, lineId } });
       },
-      async updateNotes(deliveryId, notes) {
-        await http.put('/api/deliveries/{deliveryId}/notes', { path: { deliveryId }, body: { notes } });
+      async updateNotes(deliveryId, notes, revision) {
+        await http.put('/api/deliveries/{deliveryId}/notes', { path: { deliveryId }, body: { notes, revision: revision ?? null } });
       },
-      async setWindow(deliveryId, window) {
-        await http.put('/api/deliveries/{deliveryId}/window', { path: { deliveryId }, body: window });
+      async setWindow(deliveryId, window, revision) {
+        await http.put('/api/deliveries/{deliveryId}/window', { path: { deliveryId }, body: { ...window, revision: revision ?? null } });
       },
-      async setServiceDuration(deliveryId, minutes) {
-        await http.put('/api/deliveries/{deliveryId}/service-duration', { path: { deliveryId }, body: { minutes } });
+      async setServiceDuration(deliveryId, minutes, revision) {
+        await http.put('/api/deliveries/{deliveryId}/service-duration', { path: { deliveryId }, body: { minutes, revision: revision ?? null } });
       },
       async markDelivered(deliveryId, deliveredOn) {
         await http.post('/api/deliveries/{deliveryId}/delivered', { path: { deliveryId }, body: { deliveredOn: deliveredOn ?? null } });

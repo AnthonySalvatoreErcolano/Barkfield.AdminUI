@@ -118,6 +118,45 @@ describe('delivery detail', () => {
     expect(action).toHaveBeenCalledTimes(1);
   });
 
+  it('refuses a note typed over a colleague’s, instead of silently replacing it', async () => {
+    const { user, api } = await renderSignedIn('/deliveries');
+    const name = await openFirstWhere(user, /to resolve/);
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit notes' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delivery notes' });
+    await user.type(within(dialog).getByLabelText('Notes'), 'Leave with the neighbour');
+
+    // A colleague saves a note while this dialog is open.
+    const d = api.fake.db.deliveries.find(x => x.customerName === name && !x.isClosed)!;
+    await api.deliveries.updateNotes(d.id, 'Customer called — hold until Friday', d.revision);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('This delivery just changed')).toBeInTheDocument();
+    expect(api.fake.db.deliveries.find(x => x.id === d.id)!.notes).toBe('Customer called — hold until Friday');
+  });
+
+  it('saves a new window and time at the door together, each guarded by the revision', async () => {
+    const { user, api } = await renderSignedIn('/deliveries');
+    const name = await openFirstWhere(user, /to resolve/);
+    const update = vi.spyOn(api.deliveries, 'setServiceDuration');
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Window and time at the door' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Window and time at the door' });
+    const d = api.fake.db.deliveries.find(x => x.customerName === name && !x.isClosed)!;
+    const opened = d.revision;
+    await user.clear(within(dialog).getByLabelText('Window from'));
+    await user.type(within(dialog).getByLabelText('Window from'), '09:00');
+    await user.clear(within(dialog).getByLabelText('Window until'));
+    await user.type(within(dialog).getByLabelText('Window until'), '11:00');
+    await user.clear(within(dialog).getByLabelText('Time at the door'));
+    await user.type(within(dialog).getByLabelText('Time at the door'), '12');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(update).toHaveBeenCalledWith(d.id, 12, opened + 1); // after our own window change, not a stale one
+    expect(api.fake.db.deliveries.find(x => x.id === d.id)!.serviceDurationMinutesOverride).toBe(12);
+  });
+
   it('cancels from the manage menu, and the delivery then reads as closed', async () => {
     const { user } = await renderSignedIn('/deliveries');
     await openFirstWhere(user, /to resolve/);

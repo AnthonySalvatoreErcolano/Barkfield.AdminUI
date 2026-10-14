@@ -55,7 +55,8 @@ export function NotesDialog({ delivery, onClose, run }: Props) {
   const [notes, setNotes] = useState(delivery.notes ?? '');
   return (
     <WriteDialog title="Delivery notes" description="For staff, about this delivery only." submitLabel="Save" onClose={onClose}
-      onSubmit={() => run(() => api.deliveries.updateNotes(delivery.id, notes.trim() || null), { title: 'Notes saved' })}>
+      // The revision this dialog opened on: a colleague's note saved meanwhile is a 409, never overwritten.
+      onSubmit={() => run(() => api.deliveries.updateNotes(delivery.id, notes.trim() || null, delivery.revision), { title: 'Notes saved' })}>
       <Textarea label="Notes" rows={4} value={notes} onChange={e => setNotes(e.target.value)} autoFocus />
     </WriteDialog>
   );
@@ -82,13 +83,17 @@ export function StopDialog({ delivery, onClose, run }: Props) {
       onSubmit={async () => {
         setTried(true);
         if (windowError || minutesError) return 'invalid';
-        // Two endpoints; sent one after the other, never together, so they cannot collide.
+        // Two endpoints, sent one after the other, each guarded by the revision the dialog opened on.
+        // Our own first write bumps it by one, so the second expects that — and anyone else's change in
+        // between is still refused.
+        let revision = delivery.revision;
         if (windowChanged) {
-          const r = await run(() => api.deliveries.setWindow(delivery.id, { start: toApiTime(start), end: toApiTime(end) }));
+          const r = await run(() => api.deliveries.setWindow(delivery.id, { start: toApiTime(start), end: toApiTime(end) }, revision));
           if (!r.ok) return r;
+          revision++;
         }
         if (minutesChanged) {
-          const r = await run(() => api.deliveries.setServiceDuration(delivery.id, minutes === '' ? null : m));
+          const r = await run(() => api.deliveries.setServiceDuration(delivery.id, minutes === '' ? null : m, revision));
           if (!r.ok) return r;
         }
         return { ok: true };

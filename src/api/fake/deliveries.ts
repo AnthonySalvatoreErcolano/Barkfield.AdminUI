@@ -90,8 +90,12 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
     return d;
   };
   /** Load, change, save with the revision bumped — and the one planned collision. */
-  const mutate = (id: string, change: (d: DeliveryDetail) => void) => {
+  const mutate = (id: string, change: (d: DeliveryDetail) => void, expectedRevision?: number) => {
     const d = find(id);
+    // The form was built before somebody else's change (DeliveryService.MutateAsync, its own wording).
+    if (expectedRevision !== undefined && expectedRevision !== d.revision) {
+      throw new ConflictError('This delivery was changed by someone else after this page was loaded. Reload to see their change, then make yours again.');
+    }
     if (conflictOnce.has(id)) {
       conflictOnce.delete(id);
       const other = d.lines.find(l => l.orderStatus === LineOrderStatus.Pending);
@@ -330,12 +334,12 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
       });
     },
 
-    async updateNotes(id, notes) {
+    async updateNotes(id, notes, revision) {
       await wait();
-      mutate(id, d => { d.notes = notes?.trim() || null; });
+      mutate(id, d => { d.notes = notes?.trim() || null; }, revision);
     },
 
-    async setWindow(id, { start, end }) {
+    async setWindow(id, { start, end }, revision) {
       await wait();
       mutate(id, d => {
         ensureOpen(d);
@@ -343,16 +347,16 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         if (start && end && end <= start) throw new ValidationError(`A time window must end after it starts (got ${start.slice(0, 5)}–${end.slice(0, 5)}).`);
         d.requestedWindowStart = start;
         d.requestedWindowEnd = end;
-      });
+      }, revision);
     },
 
-    async setServiceDuration(id, minutes) {
+    async setServiceDuration(id, minutes, revision) {
       await wait();
       mutate(id, d => {
         ensureOpen(d);
         if (minutes !== null && (minutes < 0 || minutes > 480)) throw new ValidationError('Service duration must be between 0 and 480 minutes.');
         d.serviceDurationMinutesOverride = minutes;
-      });
+      }, revision);
     },
 
     async markDelivered(id, deliveredOn) {

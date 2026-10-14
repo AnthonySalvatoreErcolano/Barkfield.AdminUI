@@ -188,29 +188,42 @@ surfaced as-is.
 | **502** | Square or Routific | See below |
 | **503** | Database unavailable | Full-page retry state |
 
-### 409, and what it does and does not protect
+### 409, and what it protects
 
-⚠️ **Corrected.** An earlier version of this file said a 409 means someone else changed the record
-while you had the form open. **It does not, and cannot as the API stands.**
+A 409 now has **two** causes, and they need the same handling but mean different things.
 
-No write endpoint accepts a revision from the client — there is no `revision` field in any request body
-and no `If-Match` header. The server reads the record, applies the change and saves it against the
-revision it read microseconds earlier. So a 409 means **two writes overlapped on the server**: two
-clicks at once, a staff action landing at the same moment as a Routific webhook, a batch endpoint
-racing something else.
+**Two writes overlapping on the server.** This is the original one and applies to every write. The
+server reads the record, applies the change and saves it against the revision it read microseconds
+earlier — so this fires on two clicks at once, a staff action landing at the same moment as a
+Routific webhook, or a batch endpoint racing something else. Rare, but real.
 
-What this leaves uncovered: load a record, wait ten minutes while somebody else edits it, then save —
-**your save wins and their change is lost, with no 409.** Last write wins on stale data.
+**A form built before somebody else's change.** This is the case that used to pass silently: load a
+record, wait ten minutes while a colleague edits it, then save — your save won and their change was
+lost, with no 409. Three writes now accept the revision your form was built from and refuse a stale
+submission:
 
-Two consequences for the UI:
+| Endpoint | Field |
+|---|---|
+| `PUT /api/deliveries/{id}/notes` | `revision` |
+| `PUT /api/deliveries/{id}/window` | `revision` |
+| `PUT /api/deliveries/{id}/service-duration` | `revision` |
 
-- **Still build reload-and-reapply on a 409.** It is rarer than implied, but it is real and the
-  `message` is already written for staff. Never auto-retry, and never show "Error 409".
-- **Do not rely on the API to protect a long-lived form.** Re-read before save on anything a user may
-  have sat on, and keep edit forms short-lived where you can.
+**The field is optional, and omitting it keeps the previous behaviour exactly** — last write wins on
+stale data. So nothing breaks by not sending it, and you can adopt it a screen at a time. Send the
+`revision` that came back with the delivery the form was rendered from.
 
-Whether writes should carry the revision back is an open question with the API side. If that changes,
-this section changes with it.
+**Only these three, deliberately.** They are the writes that submit a whole typed value, where an
+overwrite loses somebody's work. The commands — pack, deliver, mark a line ordered or received,
+short, substitute, cancel — take no revision on purpose: they are state transitions where last
+writer wins is the right answer, and refusing a packer because a colleague touched a different line
+on the same delivery would be an obstacle rather than a safeguard.
+
+For the UI:
+
+- **Build reload-and-reapply on a 409 everywhere.** The `message` is already written for staff.
+  Never auto-retry, and never show "Error 409".
+- **Send the revision on those three**, and you get a real guarantee rather than a hope.
+- **Elsewhere, re-read before save** on anything a user may have sat on. The API will not catch it.
 
 ### 502 has two distinct causes
 

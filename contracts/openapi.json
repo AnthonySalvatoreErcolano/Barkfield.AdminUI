@@ -15152,7 +15152,16 @@
                                                                                                                     "string"
                                                                                                                 ],
                                                                                                        "format":  "time"
-                                                                                                   }
+                                                                                                   },
+                                                                                           "revision":  {
+                                                                                                            "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                            "type":  [
+                                                                                                                         "null",
+                                                                                                                         "integer",
+                                                                                                                         "string"
+                                                                                                                     ],
+                                                                                                            "format":  "int32"
+                                                                                                        }
                                                                                        }
                                                                     },
                                        "SetServiceDurationRequest":  {
@@ -15168,7 +15177,16 @@
                                                                                                                          "string"
                                                                                                                      ],
                                                                                                             "format":  "int32"
-                                                                                                        }
+                                                                                                        },
+                                                                                            "revision":  {
+                                                                                                             "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                             "type":  [
+                                                                                                                          "null",
+                                                                                                                          "integer",
+                                                                                                                          "string"
+                                                                                                                      ],
+                                                                                                             "format":  "int32"
+                                                                                                         }
                                                                                         }
                                                                      },
                                        "SetStopLoadedRequest":  {
@@ -15800,7 +15818,16 @@
                                                                                                                         "null",
                                                                                                                         "string"
                                                                                                                     ]
-                                                                                                       }
+                                                                                                       },
+                                                                                             "revision":  {
+                                                                                                              "pattern":  "^-?(?:0|[1-9]\\d*)$",
+                                                                                                              "type":  [
+                                                                                                                           "null",
+                                                                                                                           "integer",
+                                                                                                                           "string"
+                                                                                                                       ],
+                                                                                                              "format":  "int32"
+                                                                                                          }
                                                                                          }
                                                                       },
                                        "UpdatePetRequest":  {

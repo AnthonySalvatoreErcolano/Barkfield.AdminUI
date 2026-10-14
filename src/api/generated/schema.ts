@@ -7243,12 +7243,16 @@ export interface components {
         SetDeliveryWindowRequest: {
             /** Format: time */
             end: null | string;
+            /** Format: int32 */
+            revision: null | number;
             /** Format: time */
             start: null | string;
         };
         SetServiceDurationRequest: {
             /** Format: int32 */
             minutes: null | number;
+            /** Format: int32 */
+            revision: null | number;
         };
         SetStopLoadedRequest: {
             loaded: boolean;
@@ -7418,6 +7422,8 @@ export interface components {
         };
         UpdateDeliveryNotesRequest: {
             notes: null | string;
+            /** Format: int32 */
+            revision: null | number;
         };
         UpdatePetRequest: {
             allergyIds?: string[];
