@@ -268,6 +268,9 @@ export function createLiveApi(): Api {
         await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/jump-to/{itemId}', { path: { subscriptionId, groupId, itemId } });
       },
     },
+    dispatch: {
+      board: (date, signal) => http.get('/api/dispatch', { query: { date: toApiDay(date) }, signal }),
+    },
     procurement: {
       products: (query, signal) => http.get('/api/procurement/products', { query, signal }),
       lines: (query, signal) => http.get('/api/procurement/lines', { query, signal }),

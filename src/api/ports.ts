@@ -279,6 +279,14 @@ export interface ProductsPort {
   reactivate(productId: string): Promise<void>;
 }
 
+export type DispatchBoard = Schemas['DispatchBoardDto'];
+
+/** The day's local deliveries against Routific. Grown with the Dispatch screen; the dashboard reads the board. */
+export interface DispatchPort {
+  /** Includes closed deliveries (a delivered stop is still part of the day); `statusLine` is ready to show. */
+  board(date: string, signal?: AbortSignal): Promise<DispatchBoard>;
+}
+
 export interface Api {
   auth: AuthPort;
   users: UsersPort;
@@ -289,4 +297,5 @@ export interface Api {
   procurement: ProcurementPort;
   billing: BillingPort;
   subscriptions: SubscriptionsPort;
+  dispatch: DispatchPort;
 }

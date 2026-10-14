@@ -15,6 +15,7 @@ import { SCREENS, type Screen } from './nav';
 /** Screen id → its component, as screens get built. Anything missing shows the placeholder. */
 // Each screen is its own chunk, loaded the first time someone opens it.
 const BUILT: Record<string, ComponentType> = {
+  dashboard: lazy(() => import('../pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))),
   customers: lazy(() => import('../pages/customers/CustomersRoutes').then(m => ({ default: m.CustomersRoutes }))),
   deliveries: lazy(() => import('../pages/deliveries/DeliveriesRoutes').then(m => ({ default: m.DeliveriesRoutes }))),
   procurement: lazy(() => import('../pages/procurement/ProcurementPage').then(m => ({ default: m.ProcurementPage }))),

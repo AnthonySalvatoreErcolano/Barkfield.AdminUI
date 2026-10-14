@@ -23,7 +23,7 @@ export interface NavSection {
 export const NAV: NavSection[] = [
   {
     screens: [
-      { id: 'dashboard', label: 'Dashboard', path: '/', icon: 'layout-dashboard', built: false },
+      { id: 'dashboard', label: 'Dashboard', path: '/', icon: 'layout-dashboard', built: true },
     ],
   },
   {

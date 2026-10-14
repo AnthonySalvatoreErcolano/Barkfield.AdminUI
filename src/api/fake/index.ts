@@ -10,6 +10,7 @@ import { createFakeCustomers } from './customers';
 import { createFakeDeliveries } from './deliveries';
 import { createFakeProducts } from './products';
 import { createFakePets } from './pets';
+import { createFakeDispatch } from './dispatch';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
@@ -123,6 +124,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     procurement: createFakeProcurement(db, wait),
     billing: createFakeBilling(db, wait),
     subscriptions: createFakeSubscriptions(db, wait),
+    dispatch: createFakeDispatch(db, wait),
     fake: {
       db,
       expireSession() {
