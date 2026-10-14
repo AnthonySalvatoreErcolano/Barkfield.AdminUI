@@ -92,10 +92,19 @@ export function manifest(db: Seed, subId: string, offset = 0): ManifestLine[] {
   return lines;
 }
 
-/** After a delivery is generated: rotations move on, add-ons are used up. */
-export function completeCycle(db: Seed, subId: string) {
+/**
+ * A delivery was completed (marked delivered, or Routific reported it): rotations move on, add-ons are
+ * used up, and the dates move — the next delivery is one cycle after the day it was delivered. A new
+ * sign-up becomes active. Generation does none of this.
+ */
+export function completeDelivery(db: Seed, subId: string, deliveredOn: string) {
+  const s = db.subscriptions.find(x => x.id === subId);
+  if (!s || s.status === SubscriptionStatus.Canceled) return;
   for (const g of db.rotationGroups.get(subId) ?? []) if (g.isActive && g.items.length) g.position++;
-  for (const a of db.addOns.get(subId) ?? []) if (!a.consumedAt) a.consumedAt = new Date().toISOString();
+  for (const a of db.addOns.get(subId) ?? []) if (!a.consumedAt) a.consumedAt = deliveredOn;
+  s.lastDeliveryDate = deliveredOn;
+  s.nextDeliveryDate = nextDate(deliveredOn, s.frequencyInterval, s.frequencyUnit);
+  if (s.status === SubscriptionStatus.NewSignUp) s.status = SubscriptionStatus.Active as typeof s.status;
   recount(db, subId);
 }
 
@@ -128,7 +137,9 @@ export function recount(db: Seed, subId: string) {
   const productIds = [...items.map(i => i.productId), ...groups.flatMap(g => g.items.map(i => i.productId)), ...addOns.map(a => a.productId)];
   s.inactiveProductCount = new Set(productIds.filter(id => !productOf(db, id).isActive)).size;
   s.frequencyLabel = frequencyLabel(s.frequencyInterval, s.frequencyUnit);
-  s.displayName = s.name ?? s.frequencyLabel;
+  const parts = [s.itemCount ? `${s.itemCount} item${s.itemCount === 1 ? '' : 's'}` : '', s.rotationGroupCount ? `${s.rotationGroupCount} rotation${s.rotationGroupCount === 1 ? '' : 's'}` : ''].filter(Boolean);
+  // Subscription.ComposeDisplayName: "every 3 weeks · 2 items, 1 rotation".
+  s.displayName = s.name ?? (parts.length ? `${s.frequencyLabel} · ${parts.join(', ')}` : s.frequencyLabel);
   s.statusName = ['', 'NewSignUp', 'Active', 'Paused', 'Canceled'][s.status]!;
   s.isPauseExpired = s.status === SubscriptionStatus.Paused && s.pausedUntil !== null && s.pausedUntil.slice(0, 10) <= todayDay().slice(0, 10);
 }

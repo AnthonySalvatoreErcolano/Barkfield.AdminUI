@@ -146,6 +146,22 @@ describe('generating deliveries', () => {
   });
 });
 
+describe('double booking', () => {
+  it('warns that generating another day before today ships gives customers a second box', async () => {
+    const { user, api } = await renderSignedIn('/deliveries/generate');
+    const generate = vi.spyOn(api.deliveries, 'generate');
+    await user.click(await screen.findByRole('button', { name: 'Tomorrow' }));
+    expect(await screen.findByText(/would get a second box/)).toBeInTheDocument();
+    expect(screen.getAllByText('Second box').length).toBeGreaterThan(3);
+    expect(screen.getAllByText(/^Already open:/).length).toBeGreaterThan(3);
+
+    await user.click(screen.getByRole('button', { name: /^Create \d+ deliveries$/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Book second boxes?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Go back' }));
+    expect(generate).not.toHaveBeenCalled();
+  });
+});
+
 describe('one-off delivery', () => {
   it('schedules a delivery for a customer with no subscription behind it', async () => {
     const { user } = await renderSignedIn('/deliveries/new');

@@ -212,7 +212,7 @@ export function createSeed(): Seed {
       const generatedToday = eligibleToday || ['Marcus', 'Kate', 'Pat', 'Frank', 'Tess', 'Luis', 'Grace', 'Hannah', 'Jamal', 'Noah'].includes(p.first) && status === SubscriptionStatus.Active;
       // Due dates: the day's run was generated this morning, so those moved on a cycle. Two others are
       // overdue and not yet generated; Jake's is due but he has no address; Beth's pause ends today.
-      const next = generatedToday ? cycleDays
+      const next = generatedToday ? 0 // generated today, not yet delivered — still due today
         : p.first === 'Jake' || p.first === 'Beth' ? 0
         : p.first === 'Emma' || p.first === 'Owen' ? -2
         : 1 + ((i * 3 + k) % 12);

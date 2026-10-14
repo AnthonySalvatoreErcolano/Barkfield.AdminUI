@@ -10,7 +10,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { SORT_KEYS } from '../sortKeys';
 import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, LineAction, ProductsPort } from '../ports';
 import { makeLine, recompute, toDeliveryListItem } from './deliveryModel';
-import { completeCycle, manifest } from './subscriptionModel';
+import { completeDelivery, manifest } from './subscriptionModel';
 import type { Seed } from './seed';
 
 const dateOnly = (iso: string) => iso.slice(0, 10);
@@ -219,16 +219,14 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         // The subscription's manifest: standing items, each active rotation's current item, pending add-ons.
         const lines = manifest(db, s.id).map(m => makeLine(m.product, m.quantity, m.source, m.sourceId));
         created.push(newDelivery(s.customerId, s, date, s.fulfillmentMethod, lines, null).id);
-        completeCycle(db, s.id); // rotations move on, add-ons are used up
         if (candidate.resumingFromPause) {
           resumed.push(s.id);
           s.status = SubscriptionStatus.Active as typeof s.status;
           s.statusName = 'Active';
           s.pausedUntil = null;
         }
-        const cycle = s.frequencyUnit === 1 ? s.frequencyInterval : s.frequencyUnit === 2 ? s.frequencyInterval * 7 : s.frequencyInterval * 30;
-        s.lastDeliveryDate = asDay(date);
-        s.nextDeliveryDate = new Date(Date.parse(asDay(date)) + cycle * 86_400_000).toISOString().slice(0, 10) + 'T00:00:00Z';
+        // Like the API, generation does not move the next delivery date, rotations or add-ons — completing
+        // the delivery does. Until then the subscription stays due, so generating another day books it twice.
       }
       const skipped = due.filter(d => !d.willGenerate).map(d => ({
         subscriptionId: d.subscriptionId, subscriptionName: d.subscriptionName ?? 'Unnamed subscription', customerName: d.customerName, reason: d.skipReason!,
@@ -363,6 +361,8 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
         ensureOpen(d);
         d.status = DeliveryStatus.Delivered as DeliveryDetail['status'];
         d.completedAt = deliveredOn ?? new Date().toISOString();
+        // Completing the delivery completes the subscription's cycle (Subscription.CompleteDelivery).
+        if (d.subscriptionId) completeDelivery(db, d.subscriptionId, (deliveredOn ?? new Date().toISOString()).slice(0, 10) + 'T00:00:00Z');
       });
     },
 

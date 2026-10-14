@@ -82,9 +82,41 @@ it('generation takes the rotation’s current item and the add-ons, then moves t
   const day = addDays(todayIso(), 2);
   await api.subscriptions.reschedule(bakery.id, day);
   await api.subscriptions.reschedule(food.id, day);
-  await api.deliveries.generate(day);
+  const result = await api.deliveries.generate(day);
+  const foodDelivery = (await api.deliveries.list({ scheduledFrom: day, scheduledTo: day, subscriptionId: food.id })).items[0]!;
+  expect(result.createdDeliveryIds).toContain(foodDelivery.id);
+  expect((await api.deliveries.get(foodDelivery.id)).lines.some(l => /Salmon/.test(l.productName))).toBe(true);
+
+  // Generation alone moves nothing: still due that day, salmon still up next, the add-on still waiting.
+  expect((await api.subscriptions.get(food.id)).nextDeliveryDate.slice(0, 10)).toBe(day);
+  expect((await api.subscriptions.get(food.id)).rotationGroups[0]!.currentItem.productName).toMatch(/Salmon/);
+  expect((await api.subscriptions.get(bakery.id)).pendingAddOns).toHaveLength(1);
+});
+
+it('completing the delivery is what moves a subscription on — dates, rotation, add-ons', async () => {
+  const api = fresh();
+  const food = await subOf(api, 'Daniella', 'Biscuit’s food');
+  const bakery = await subOf(api, 'Daniella', 'Bakery box');
+  const [today] = (await api.deliveries.list({ scheduledFrom: todayIso(), scheduledTo: todayIso(), subscriptionId: food.id })).items;
+  const [box] = (await api.deliveries.list({ scheduledFrom: todayIso(), scheduledTo: todayIso(), subscriptionId: bakery.id })).items;
+  expect((await api.subscriptions.get(food.id)).nextDeliveryDate.slice(0, 10)).toBe(todayIso()); // still due until delivered
+
+  await api.deliveries.markDelivered(today!.id, todayIso() + 'T00:00:00Z');
+  await api.deliveries.markDelivered(box!.id, todayIso() + 'T00:00:00Z');
+  const after = await api.subscriptions.get(food.id);
+  expect(after.lastDeliveryDate?.slice(0, 10)).toBe(todayIso());
+  expect(after.nextDeliveryDate.slice(0, 10)).toBe(addDays(todayIso(), 28)); // every 4 weeks from the day delivered
+  expect(after.rotationGroups[0]!.currentItem.productName).toMatch(/Beef/);
   expect((await api.subscriptions.get(bakery.id)).pendingAddOns).toHaveLength(0);
-  expect((await api.subscriptions.get(food.id)).rotationGroups[0]!.currentItem.productName).toMatch(/Beef/);
+});
+
+it('generating a second day before anything ships books the customer twice — the API does not stop it', async () => {
+  const api = fresh();
+  const tomorrow = addDays(todayIso(), 1);
+  const due = await api.deliveries.due(tomorrow);
+  const daniella = due.find(d => d.subscriptionName === 'Biscuit’s food')!;
+  expect(daniella.alreadyGenerated).toBe(false); // only guards the same date
+  expect(daniella.willGenerate).toBe(true);
 });
 
 it('409s once on Chris Pardo’s subscription, with a colleague’s add-on underneath', async () => {

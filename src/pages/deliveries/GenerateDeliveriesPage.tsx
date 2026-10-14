@@ -9,10 +9,10 @@ import type { DueSubscription, GenerationResult } from '../../api/ports';
 import { PageHeader } from '../../app/layout';
 import { LoadError } from '../../app/LoadError';
 import { FULFILLMENT_LABEL } from '../../app/statusBadges';
-import { addDays, todayIso } from '../../lib/dates';
+import { addDays, dayOf, todayIso } from '../../lib/dates';
 import { formatDay, plural } from '../../lib/format';
 import { Can, useApi } from '../../session/SessionProvider';
-import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, Input } from '../../ui';
+import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, Dialog, Input } from '../../ui';
 import { customerKeys } from '../customers/keys';
 import { deliveryKeys } from './keys';
 
@@ -29,6 +29,16 @@ export function GenerateDeliveriesPage() {
     queryFn: () => api.deliveries.due(date),
     enabled: !!date,
   });
+  // Open deliveries anywhere: a subscription stays due until its delivery is completed, so one that
+  // already has an open delivery on another day would be booked a second box. The API won't stop it.
+  const open = useQuery({
+    queryKey: deliveryKeys.list({ includeClosed: false, pageSize: 200, sortBy: 'scheduledFor' }),
+    queryFn: () => api.deliveries.list({ includeClosed: false, pageSize: 200, sortBy: 'scheduledFor' }),
+  });
+  const otherOpen = (subscriptionId: string) =>
+    (open.data?.items ?? []).filter(d => d.subscriptionId === subscriptionId && dayOf(d.scheduledFor) !== date);
+  const [confirmDoubles, setConfirmDoubles] = useState(false);
+
   const generate = useMutation({
     mutationFn: () => api.deliveries.generate(date),
     onSuccess: async r => {
@@ -47,6 +57,7 @@ export function GenerateDeliveriesPage() {
   const willCreate = due.filter(d => d.willGenerate);
   const skipped = due.filter(d => !d.willGenerate && !d.alreadyGenerated);
   const already = due.filter(d => d.alreadyGenerated);
+  const doubles = willCreate.filter(d => otherOpen(d.subscriptionId).length > 0);
 
   return (
     <div>
@@ -61,6 +72,16 @@ export function GenerateDeliveriesPage() {
       </div>
 
       {result ? <ResultCard result={result} date={date} /> : null}
+      {confirmDoubles ? (
+        <Dialog open size="sm" onClose={() => setConfirmDoubles(false)} title="Book second boxes?"
+          description={`${plural(doubles.length, 'customer')} already ${doubles.length === 1 ? 'has' : 'have'} an open delivery on another day: ${doubles.map(d => d.customerName).join(', ')}.`}
+          footer={<>
+            <Button variant="ghost" onClick={() => setConfirmDoubles(false)}>Go back</Button>
+            <Button variant="danger" onClick={() => { setConfirmDoubles(false); generate.mutate(); }}>Create anyway</Button>
+          </>}>
+          <Alert tone="warning">Each of them gets another box for {formatDay(date, 'long')} — and another charge when the day is billed.</Alert>
+        </Dialog>
+      ) : null}
       {generate.error ? <Alert tone="danger" title="Generation didn’t run" style={{ marginBottom: 16 }}>{errorMessage(generate.error)}</Alert> : null}
 
       {preview.error ? <LoadError error={preview.error} onRetry={() => preview.refetch()} what="the preview" /> : (
@@ -69,11 +90,19 @@ export function GenerateDeliveriesPage() {
           eyebrow="Preview"
           actions={!result ? (
             <Can call="POST /api/deliveries/generate">
-              <Button disabled={!willCreate.length || generate.isPending} onClick={() => generate.mutate()}>
+              <Button disabled={!willCreate.length || generate.isPending} onClick={() => (doubles.length ? setConfirmDoubles(true) : generate.mutate())}>
                 {generate.isPending ? 'Creating…' : willCreate.length ? `Create ${plural(willCreate.length, 'delivery', 'deliveries')}` : 'Nothing to create'}
               </Button>
             </Can>
           ) : undefined}>
+          {doubles.length ? (
+            <div style={{ padding: '0 20px 12px' }}>
+              <Alert tone="danger" title={`${plural(doubles.length, 'customer')} would get a second box`}>
+                They already have an open delivery on another day. A subscription stays due until its
+                delivery is completed, so generating now books it again. Mark the earlier one delivered (or cancel it) first if that isn’t intended.
+              </Alert>
+            </div>
+          ) : null}
           {skipped.length ? (
             <div style={{ padding: '0 20px 12px' }}>
               <Alert tone="warning">{plural(skipped.length, 'subscription')} will be passed over — the reasons are in the list, so nothing is missed.{already.length ? ` ${plural(already.length, 'other')} already ${already.length === 1 ? 'has' : 'have'} a delivery for this day.` : ''}</Alert>
@@ -97,7 +126,14 @@ export function GenerateDeliveriesPage() {
               {
                 key: 'outcome', header: 'Outcome',
                 render: d => d.willGenerate
-                  ? <Badge tone="success" dot>Will create</Badge>
+                  ? otherOpen(d.subscriptionId).length
+                    ? <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                        <Badge tone="danger" dot>Second box</Badge>
+                        <span style={{ fontSize: 13.5, color: 'var(--status-danger-fg)' }}>
+                          Already open: {otherOpen(d.subscriptionId).map(o => formatDay(o.scheduledFor)).join(', ')}
+                        </span>
+                      </span>
+                    : <Badge tone="success" dot>Will create</Badge>
                   : <span style={{ color: d.alreadyGenerated ? 'var(--text-muted)' : 'var(--status-warning-fg)', fontSize: 14 }}>{d.skipReason}</span>,
               },
             ]}
