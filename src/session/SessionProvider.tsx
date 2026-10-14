@@ -20,6 +20,8 @@ export interface Session {
   user: UserDetail;
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
+  /** Re-read the signed-in user — after changing your own roles, so the gates follow at once. */
+  refreshUser(): Promise<UserDetail>;
   /** Holds this permission. */
   can(permission: Permission): boolean;
   /**
@@ -73,6 +75,12 @@ export function SessionProvider({ api, children }: { api: Api; children: ReactNo
     setState({ status: 'signedOut', reason: 'signedOut' });
   }, [api, queryClient]);
 
+  const refreshUser = useCallback(async () => {
+    const user = await api.users.me();
+    setState(s => (s.status === 'signedIn' ? { status: 'signedIn', user } : s));
+    return user;
+  }, [api]);
+
   const value = useMemo<Session>(() => {
     const granted = new Set(state.status === 'signedIn' ? state.user.permissions : []);
     const can = (permission: Permission) => granted.has(permission);
@@ -84,10 +92,11 @@ export function SessionProvider({ api, children }: { api: Api; children: ReactNo
       },
       signIn,
       signOut,
+      refreshUser,
       can,
       canCall: operation => can(OPERATION_PERMISSIONS[operation]),
     };
-  }, [state, signIn, signOut]);
+  }, [state, signIn, signOut, refreshUser]);
 
   return (
     <ApiContext.Provider value={api}>

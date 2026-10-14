@@ -43,6 +43,19 @@ export function createLiveApi(): Api {
       async changePassword(body) {
         await http.post('/api/users/me/change-password', { body });
       },
+      list: (query, signal) => http.get('/api/users', { query, signal }),
+      get: (userId, signal) => http.get('/api/users/{userId}', { path: { userId }, signal }),
+      create: body => http.post('/api/users', { body }), // 201 with the new id
+      async update(userId, body) {
+        await http.put('/api/users/{userId}', { path: { userId }, body });
+      },
+      async deactivate(userId) {
+        await http.delete('/api/users/{userId}', { path: { userId } });
+      },
+      async reactivate(userId) {
+        await http.post('/api/users/{userId}/reactivate', { path: { userId } });
+      },
+      roles: () => http.get('/api/roles'),
     },
     customers: {
       list: (query, signal) => http.get('/api/customers', { query, signal }),

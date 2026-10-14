@@ -4,50 +4,18 @@
 // A fake that always succeeds is worse than none: it lets the unhappy paths go unbuilt. This one
 // reproduces the API's awkward behaviour on purpose — see each method.
 
-import { PERMISSIONS, type Permission } from '../generated/permissions';
 import { RateLimitError, SignInError, ValidationError } from '../errors';
-import type { Api, UserDetail } from '../ports';
+import type { Api } from '../ports';
 import { createFakeCustomers } from './customers';
 import { createFakeDeliveries, createFakeProducts } from './deliveries';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
 import { createSeed, type Seed } from './seed';
+import { createFakeUsers, seedUsers, toUserDetail } from './users';
 
 /** The fake's sign-in password, for every seeded account. Shown on the login screen in fake mode. */
 export const FAKE_PASSWORD = 'barkfield-dev';
-
-// The live Staff role as the dev database holds it (read from /api/users/me, 2026-09-29). Staff pack
-// and charge, but do not manage deliveries (cancel, change windows, mark delivered by hand), push the
-// day to Routific, delete customers, or manage users and the catalog. Role contents are data, so the
-// fake follows the database.
-const STAFF_PERMISSIONS: Permission[] = [
-  'customer:view', 'customer:create', 'customer:edit',
-  'subscription:view', 'subscription:manage',
-  'delivery:view', 'delivery:pack',
-  'billing:view', 'billing:charge',
-  'dispatch:view',
-  'product:view',
-];
-
-const now = '2026-09-01T14:00:00Z';
-
-function seedUsers(): UserDetail[] {
-  return [
-    {
-      id: '00000000-0000-4000-8000-000000000001', name: 'Kevin Neglia', email: 'admin@barkfield.test',
-      isActive: true, isAdmin: true, createdAt: now, updatedAt: null, roleIds: null,
-      roles: [{ id: 'r-admin', name: 'Admin', description: 'Full access', isSystemRole: true }],
-      permissions: [...PERMISSIONS], // isAdmin users hold every permission, exactly as the API returns them
-    },
-    {
-      id: '00000000-0000-4000-8000-000000000002', name: 'Joe Russo', email: 'staff@barkfield.test',
-      isActive: true, isAdmin: false, createdAt: now, updatedAt: null, roleIds: null,
-      roles: [{ id: 'r-staff', name: 'Staff', description: 'Shop floor', isSystemRole: true }],
-      permissions: STAFF_PERMISSIONS,
-    },
-  ];
-}
 
 const pause = (ms = 180 + Math.random() * 220) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -79,7 +47,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
 
   const current = () => {
     const user = users.find(u => u.id === signedInId);
-    if (!user) throw new SignInError('Not signed in.');
+    if (!user || !user.isActive) throw new SignInError('Not signed in.');
     return user;
   };
 
@@ -111,7 +79,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
       },
       async restore() {
         await wait();
-        return users.some(u => u.id === signedInId);
+        return users.some(u => u.id === signedInId && u.isActive);
       },
       async forgotPassword() {
         await wait();
@@ -134,7 +102,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     users: {
       async me() {
         await wait();
-        return structuredClone(current());
+        return toUserDetail(current());
       },
       async changePassword({ currentPassword, newPassword }) {
         await wait();
@@ -144,6 +112,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
         if (invalid) throw invalid;
         passwords.set(user.id, newPassword);
       },
+      ...createFakeUsers(users, wait, () => signedInId),
     },
     customers: createFakeCustomers(db, wait),
     deliveries: createFakeDeliveries(db, wait),

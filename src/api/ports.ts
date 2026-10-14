@@ -60,10 +60,30 @@ export interface AuthPort {
   onSessionExpired(listener: () => void): () => void;
 }
 
+export type UserListItem = Schemas['UserListItemDto'];
+export type UserPage = Schemas['PagedResultOfUserListItemDto'];
+export type Role = Schemas['RoleDto'];
+export type CreateUser = Schemas['CreateUserRequest'];
+export type UpdateUser = Schemas['UpdateUserRequest'];
+export type UserListQuery = NonNullable<paths['/api/users']['get']['parameters']['query']>;
+
 export interface UsersPort {
   me(): Promise<UserDetail>;
   /** Throws ValidationError when the current password is wrong. Other sessions stay signed in. */
   changePassword(body: Schemas['ChangePasswordRequest']): Promise<void>;
+
+  /** Deactivated users are left out unless includeInactive. `roles` on each row is one comma-joined string. */
+  list(query: UserListQuery, signal?: AbortSignal): Promise<UserPage>;
+  get(userId: string, signal?: AbortSignal): Promise<UserDetail>;
+  /** At least one role. A taken email is a 400 with a message, not a field error. Resolves the new id. */
+  create(body: CreateUser): Promise<string>;
+  /** Replaces the roles wholesale. The password is not changed here. */
+  update(userId: string, body: UpdateUser): Promise<void>;
+  /** Soft: sign-in and every gated call are refused from then on. Refused for your own account. */
+  deactivate(userId: string): Promise<void>;
+  reactivate(userId: string): Promise<void>;
+  /** The fixed set to assign from. Permissions are granted to roles in the database, never here. */
+  roles(): Promise<Role[]>;
 }
 
 export type DeliveryDetail = Schemas['DeliveryDetailDto'];

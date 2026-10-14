@@ -46,7 +46,7 @@ export const NAV: NavSection[] = [
     title: 'Store',
     screens: [
       { id: 'products', label: 'Products', path: '/products', icon: 'tag', requires: 'GET /api/products', built: false },
-      { id: 'users', label: 'Users', path: '/users', icon: 'user', requires: 'GET /api/users', built: false },
+      { id: 'users', label: 'Users', path: '/users', icon: 'user', requires: 'GET /api/users', built: true },
     ],
   },
 ];
