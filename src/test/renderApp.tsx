@@ -25,7 +25,7 @@ export function renderApp(path = '/', api = createFakeApi({ latency: false, pers
       </QueryClientProvider>
     </StrictMode>,
   );
-  return { user, api };
+  return { user, api, queryClient };
 }
 
 export type User = ReturnType<typeof userEvent.setup>;

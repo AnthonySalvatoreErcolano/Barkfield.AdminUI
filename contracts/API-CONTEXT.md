@@ -225,6 +225,16 @@ For the UI:
 - **Send the revision on those three**, and you get a real guarantee rather than a hope.
 - **Elsewhere, re-read before save** on anything a user may have sat on. The API will not catch it.
 
+**Two of these in a row.** A successful write to any one of the three raises the delivery's revision
+by **exactly one** — the save is a single statement, `Revision = Revision + 1`, and each of these
+endpoints performs one save. So a screen that saves the window and then the duration can send
+`opened` on the first call and `opened + 1` on the second: its own write is accounted for, while a
+colleague's change in between still makes the second call's revision wrong and is refused.
+
+That is a guarantee, not an accident, and it is written down here because a UI depending on it has
+no other way to know. None of these endpoints returns the new revision today — they answer `204`. If
+you would rather not predict it, re-read the delivery between the two calls.
+
 ### 502 has two distinct causes
 
 Both are upstream, but they need opposite reactions:

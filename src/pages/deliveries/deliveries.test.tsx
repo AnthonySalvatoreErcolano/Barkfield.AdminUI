@@ -119,16 +119,18 @@ describe('delivery detail', () => {
   });
 
   it('refuses a note typed over a colleague’s, instead of silently replacing it', async () => {
-    const { user, api } = await renderSignedIn('/deliveries');
+    const { user, api, queryClient } = await renderSignedIn('/deliveries');
     const name = await openFirstWhere(user, /to resolve/);
     await user.click(screen.getByRole('button', { name: 'More actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Edit notes' }));
     const dialog = await screen.findByRole('dialog', { name: 'Delivery notes' });
     await user.type(within(dialog).getByLabelText('Notes'), 'Leave with the neighbour');
 
-    // A colleague saves a note while this dialog is open.
+    // A colleague saves a note while this dialog is open — and the page refetches underneath it, as a
+    // late refresh does (found live: reading the revision at save time adopted theirs and overwrote it).
     const d = api.fake.db.deliveries.find(x => x.customerName === name && !x.isClosed)!;
     await api.deliveries.updateNotes(d.id, 'Customer called — hold until Friday', d.revision);
+    await queryClient.refetchQueries({ queryKey: ['deliveries'] });
 
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('This delivery just changed')).toBeInTheDocument();

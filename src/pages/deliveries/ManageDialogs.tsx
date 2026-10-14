@@ -53,10 +53,13 @@ function WriteDialog({ title, description, submitLabel, danger, onSubmit, onClos
 export function NotesDialog({ delivery, onClose, run }: Props) {
   const api = useApi();
   const [notes, setNotes] = useState(delivery.notes ?? '');
+  // Fixed when the dialog opens. The delivery prop refreshes underneath an open dialog, and reading the
+  // revision at save time would quietly adopt a colleague's change and overwrite it.
+  const [openedRevision] = useState(delivery.revision);
   return (
     <WriteDialog title="Delivery notes" description="For staff, about this delivery only." submitLabel="Save" onClose={onClose}
       // The revision this dialog opened on: a colleague's note saved meanwhile is a 409, never overwritten.
-      onSubmit={() => run(() => api.deliveries.updateNotes(delivery.id, notes.trim() || null, delivery.revision), { title: 'Notes saved' })}>
+      onSubmit={() => run(() => api.deliveries.updateNotes(delivery.id, notes.trim() || null, openedRevision), { title: 'Notes saved' })}>
       <Textarea label="Notes" rows={4} value={notes} onChange={e => setNotes(e.target.value)} autoFocus />
     </WriteDialog>
   );
@@ -64,6 +67,7 @@ export function NotesDialog({ delivery, onClose, run }: Props) {
 
 export function StopDialog({ delivery, onClose, run }: Props) {
   const api = useApi();
+  const [openedRevision] = useState(delivery.revision); // fixed at open — see NotesDialog
   const [start, setStart] = useState(toInputTime(delivery.requestedWindowStart));
   const [end, setEnd] = useState(toInputTime(delivery.requestedWindowEnd));
   const [minutes, setMinutes] = useState(delivery.serviceDurationMinutesOverride == null ? '' : String(delivery.serviceDurationMinutesOverride));
@@ -85,8 +89,9 @@ export function StopDialog({ delivery, onClose, run }: Props) {
         if (windowError || minutesError) return 'invalid';
         // Two endpoints, sent one after the other, each guarded by the revision the dialog opened on.
         // Our own first write bumps it by one, so the second expects that — and anyone else's change in
-        // between is still refused.
-        let revision = delivery.revision;
+        // between is still refused. Safe because each of these saves raises the revision by exactly one
+        // (API-CONTEXT §4 guarantees it).
+        let revision = openedRevision;
         if (windowChanged) {
           const r = await run(() => api.deliveries.setWindow(delivery.id, { start: toApiTime(start), end: toApiTime(end) }, revision));
           if (!r.ok) return r;
