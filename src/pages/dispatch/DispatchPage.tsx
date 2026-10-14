@@ -18,13 +18,13 @@ import { DeliveryStatusBadge, PaymentStatusBadge } from '../../app/statusBadges'
 import { useListParams } from '../../app/lists';
 import { useToast } from '../../app/toast';
 import { addDays, todayIso } from '../../lib/dates';
-import { formatDay, plural } from '../../lib/format';
+import { formatClock, formatDay, plural } from '../../lib/format';
 import { Can, useApi } from '../../session/SessionProvider';
 import { Alert, Badge, Button, Card, Chip, DataTable, Dialog, Input, Muted } from '../../ui';
 import { deliveryKeys } from '../deliveries/keys';
 import { dispatchKeys } from './keys';
 
-const timeOf = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '');
+const timeOf = formatClock;
 
 /** Has a Routific order. The order id is what withdrawing needs, so it counts even without a sent time. */
 const isSent = (d: DeliveryListItem) => !!d.sentToRoutingAt || !!d.externalOrderId;

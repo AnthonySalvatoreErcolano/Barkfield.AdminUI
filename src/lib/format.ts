@@ -14,13 +14,27 @@ export function formatDay(iso: string | null | undefined, style: 'short' | 'long
     : { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+/**
+ * A real instant from the API. Many arrive with no zone at all ("2026-10-14T18:59:39.197" — read from
+ * the database without one) but are UTC; JavaScript would read those as LOCAL time and show them hours
+ * off. So a bare one is taken as UTC; one with Z or an offset is taken as written.
+ */
+export function parseInstant(iso: string): Date {
+  return new Date(/(Z|[+-]\d\d:?\d\d)$/i.test(iso) ? iso : `${iso}Z`);
+}
+
 /** A real instant (createdAt, paymentAttemptedAt): UTC on the wire, shown in local time. */
 export function formatInstant(iso: string | null | undefined, withTime = false): string {
   if (!iso) return '—';
-  const d = new Date(iso);
+  const d = parseInstant(iso);
   return withTime
     ? d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** The local time of day of a real instant ("2:59 PM"), e.g. when the day was sent for routing. */
+export function formatClock(iso: string | null | undefined): string {
+  return iso ? parseInstant(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
 }
 
 /** A wall-clock time at the customer's door ("HH:mm:ss", no zone). */

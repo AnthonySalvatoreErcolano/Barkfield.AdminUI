@@ -1,4 +1,4 @@
-import { formatDay, formatMoney, formatPhone, formatTime, toApiTime, toInputTime } from './format';
+import { formatClock, formatDay, formatInstant, formatMoney, formatPhone, formatTime, parseInstant, toApiTime, toInputTime } from './format';
 
 describe('formatDay', () => {
   it('reads the date part and never shifts it, whatever the local zone', () => {
@@ -44,5 +44,16 @@ describe('date-only helpers', () => {
     expect(addDays('2026-09-29', 3)).toBe('2026-10-02');
     expect(addDays('2026-03-08', 1)).toBe('2026-03-09'); // US DST change
     expect(toApiDay('2026-09-29')).toBe('2026-09-29T00:00:00Z');
+  });
+});
+
+describe('instants', () => {
+  // Tests run in America/New_York (EDT in October, UTC−4).
+  it('reads a zone-less API instant as UTC, not local time', () => {
+    expect(formatClock('2026-10-14T18:59:39.197')).toBe('2:59 PM'); // the live sentToRoutingAt that read 6:59 PM
+    expect(formatClock('2026-10-14T18:59:39Z')).toBe('2:59 PM');
+    expect(formatClock('2026-10-14T14:59:39-04:00')).toBe('2:59 PM');
+    expect(parseInstant('2026-10-15T02:30:00').toISOString()).toBe('2026-10-15T02:30:00.000Z');
+    expect(formatInstant('2026-10-15T02:30:00')).toBe('Oct 14, 2026'); // late evening local, the day before
   });
 });

@@ -16,13 +16,13 @@ import { LoadError } from '../../app/LoadError';
 import { PaymentStatusBadge } from '../../app/statusBadges';
 import { useToast } from '../../app/toast';
 import { injectStyles } from '../../ui/injectStyles';
-import { formatDay, plural } from '../../lib/format';
+import { formatClock, formatDay, plural } from '../../lib/format';
 import { useApi, useSession } from '../../session/SessionProvider';
 import { Alert, Badge, Breadcrumbs, Button, Card, Checkbox, Muted } from '../../ui';
 import { dispatchKeys } from './keys';
 
 const PRINT_CSS = '@media print{.br-side,.app__top,.no-print{display:none!important}.app{height:auto;display:block}.app__scroll{overflow:visible}.app__content{padding:0;max-width:none}body,.app{background:#fff}.load-stop{break-inside:avoid}}';
-const timeOf = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : null);
+const timeOf = (iso: string | null | undefined) => formatClock(iso) || null;
 
 export function LoadListPage() {
   injectStyles('load-list-print', PRINT_CSS);
