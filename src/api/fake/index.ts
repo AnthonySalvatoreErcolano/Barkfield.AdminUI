@@ -9,6 +9,7 @@ import type { Api } from '../ports';
 import { createFakeCustomers } from './customers';
 import { createFakeDeliveries } from './deliveries';
 import { createFakeProducts } from './products';
+import { createFakePets } from './pets';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
@@ -116,6 +117,7 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
       ...createFakeUsers(users, wait, () => signedInId),
     },
     customers: createFakeCustomers(db, wait),
+    pets: createFakePets(db, wait),
     deliveries: createFakeDeliveries(db, wait),
     products: createFakeProducts(db, wait),
     procurement: createFakeProcurement(db, wait),

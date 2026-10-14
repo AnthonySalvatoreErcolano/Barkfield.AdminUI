@@ -80,6 +80,21 @@ export function createLiveApi(): Api {
       deliveries: (customerId, page) =>
         http.get('/api/customers/{customerId}/deliveries', { path: { customerId }, query: page }),
     },
+    pets: {
+      get: (petId, signal) => http.get('/api/pets/{petId}', { path: { petId }, signal }),
+      create: (customerId, body) => http.post('/api/customers/{customerId}/pets', { path: { customerId }, body }), // 201 with the id
+      async update(petId, body) {
+        await http.put('/api/pets/{petId}', { path: { petId }, body });
+      },
+      async deactivate(petId) {
+        await http.delete('/api/pets/{petId}', { path: { petId } });
+      },
+      async reactivate(petId) {
+        await http.post('/api/pets/{petId}/reactivate', { path: { petId } });
+      },
+      allergies: () => http.get('/api/allergies'),
+      addAllergy: allergyName => http.post('/api/allergies', { body: { allergyName } }), // 200 with the id, new or existing
+    },
     deliveries: {
       list: (query, signal) => http.get('/api/deliveries', { query, signal }),
       get: (deliveryId, signal) => http.get('/api/deliveries/{deliveryId}', { path: { deliveryId }, signal }),

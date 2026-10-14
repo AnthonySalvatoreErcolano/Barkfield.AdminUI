@@ -15,6 +15,7 @@ import { Can, useApi, useSession } from '../../session/SessionProvider';
 import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, DetailField, Dialog, Muted, Pagination, Tabs } from '../../ui';
 import { NextDelivery } from '../subscriptions/SubscriptionsListPage';
 import { DeliveryDetailsDialog } from './DeliveryDetailsDialog';
+import { PetsTab } from './PetsTab';
 import { customerKeys } from './keys';
 
 /** Passed in navigation state after a save whose Square half did not go through. */
@@ -221,26 +222,6 @@ function RestoreButton({ customer }: { customer: CustomerDetail }) {
     onError: err => toast({ tone: 'danger', title: 'Couldn’t restore', message: errorMessage(err) }),
   });
   return <Button iconLeft="refresh-cw" onClick={() => restore.mutate()} disabled={restore.isPending}>{restore.isPending ? 'Restoring…' : 'Restore'}</Button>;
-}
-
-function PetsTab({ customer }: { customer: CustomerDetail }) {
-  if (!customer.pets.length) return <Card><p style={{ margin: 0, color: 'var(--text-muted)' }}>No pets on file.</p></Card>;
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-      {customer.pets.map(p => (
-        <Card key={p.id} tone="cream" title={p.name}>
-          <div style={{ fontSize: 14.5, color: 'var(--ink-700)', marginBottom: p.allergies.length ? 10 : 0 }}>
-            {[p.breed, p.petTypeName === 'Dog' || !p.petTypeName ? null : p.petTypeName, p.ageYears != null ? `${p.ageYears} yrs` : null].filter(Boolean).join(' · ')}
-          </div>
-          {p.allergies.length ? (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {p.allergies.map(a => <Chip key={a.id} variant="tag" size="sm">{a.allergyName}</Chip>)}
-            </div>
-          ) : null}
-        </Card>
-      ))}
-    </div>
-  );
 }
 
 function SubscriptionsTab({ customerId }: { customerId: string }) {

@@ -45,6 +45,25 @@ export interface CustomersPort {
   deliveries(customerId: string, page: { pageNumber: number; pageSize: number }): Promise<DeliveryPage>;
 }
 
+export type Allergy = Schemas['AllergyDto'];
+export type PetWrite = Schemas['CreatePetRequest'];
+
+/** Pets hang off a customer (customers.pets lists them); one pet is addressed by its own id. */
+export interface PetsPort {
+  get(petId: string, signal?: AbortSignal): Promise<Pet>;
+  /** Resolves the new pet's id. */
+  create(customerId: string, body: PetWrite): Promise<string>;
+  /** Allergies are replaced wholesale by allergyIds; an empty list clears them. */
+  update(petId: string, body: PetWrite): Promise<void>;
+  /** Soft: kept, and restorable. Most often a pet leaves the list because it has died. */
+  deactivate(petId: string): Promise<void>;
+  reactivate(petId: string): Promise<void>;
+  /** The shared reference list, sorted by name. */
+  allergies(): Promise<Allergy[]>;
+  /** Adds to the shared list, or returns the existing one with that name (case-insensitively). */
+  addAllergy(allergyName: string): Promise<string>;
+}
+
 export interface AuthPort {
   /** Sign in and hold the access token. Throws SignInError (wrong credentials) or RateLimitError. */
   login(credentials: Schemas['LoginRequest']): Promise<void>;
@@ -264,6 +283,7 @@ export interface Api {
   auth: AuthPort;
   users: UsersPort;
   customers: CustomersPort;
+  pets: PetsPort;
   deliveries: DeliveriesPort;
   products: ProductsPort;
   procurement: ProcurementPort;
