@@ -6660,6 +6660,8 @@ export interface components {
             notYetPackedCount: number;
             /** Format: int32 */
             paymentFailedCount: number;
+            /** Format: int32 */
+            readyToSendCount: number;
             routes: components["schemas"]["RouteListItemDto"][];
             /** Format: int32 */
             sentCount: number;
@@ -6826,6 +6828,7 @@ export interface components {
             phoneNumbers: null | string[];
             /** Format: date-time */
             plannedArrival: null | string;
+            routeStopIds: string[];
             /** Format: int32 */
             sequenceOrder: number;
             /** Format: int32 */

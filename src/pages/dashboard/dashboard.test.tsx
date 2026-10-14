@@ -23,7 +23,7 @@ describe('dashboard', () => {
     // Today's table, the dispatch status line in the API's words, and the refused cards up top.
     const card = screen.getByText('Today’s deliveries', { selector: '.br-card *' }).closest('.br-card') as HTMLElement;
     await within(card).findByText(todays[0]!.customerName);
-    expect(await screen.findByText(/ready to send for routing\./)).toBeInTheDocument();
+    expect(await screen.findByText(/ready to send for routing/)).toBeInTheDocument();
     expect(await screen.findByText(/refused/)).toBeInTheDocument();
   });
 
@@ -38,7 +38,7 @@ describe('dashboard', () => {
     const { user } = renderApp('/');
     await signIn(user, 'dev@barkfield.test'); // Driver: delivery:view + dispatch:view, no billing
     await tile('Today’s deliveries');
-    expect(await screen.findByText(/ready to send for routing\./)).toBeInTheDocument();
+    expect(await screen.findByText(/ready to send for routing/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Review' })).not.toBeInTheDocument();
   });
 

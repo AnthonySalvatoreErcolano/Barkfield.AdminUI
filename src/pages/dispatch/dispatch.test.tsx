@@ -107,7 +107,13 @@ describe('the load list', () => {
     const box = screen.getAllByRole('checkbox', { name: /box is in the van$/ })[0]!;
     await user.click(box.closest('label')!.querySelector('.br-check__box')!);
     await waitFor(() => expect(box).toBeChecked());
-    expect(screen.getByText(/^1 of \d+ doorsteps? loaded$/)).toBeInTheDocument();
+    expect(screen.getByText(/^1 of \d+ stops? loaded$/)).toBeInTheDocument();
+
+    // The stop the dispatcher added has nothing to load, but it is ticked like any other door.
+    const adHoc = screen.getByRole('checkbox', { name: /is ready to go$/ });
+    await user.click(adHoc.closest('label')!.querySelector('.br-check__box')!);
+    await waitFor(() => expect(adHoc).toBeChecked());
+    expect(screen.getByText(/^2 of \d+ stops loaded$/)).toBeInTheDocument();
   });
 
   it('says the plan is out of date when the route is pulled back', async () => {

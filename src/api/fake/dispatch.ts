@@ -7,8 +7,9 @@
 //   - withdraw: refused for one never sent; otherwise unlinked and sendable again
 //   - the load list: one entry per doorstep (shared addresses carry two boxes), in LOADING order (the
 //     reverse of driving), quantities as actually going, access notes and phones from everyone at the door
-//   - an ad-hoc stop (added in Routific) has a route-stop row, but the load list carries no id for it
-//     (routeStopId is only on deliveries), so nobody can tick it and it never reads as loaded — as in the API
+//   - every stop carries routeStopIds (one per row at the door, ad-hoc included); a door is loaded only
+//     when every row is, so an ad-hoc stop starts unloaded and is ticked like any other
+//   - route counts are per doorstep, matching the load list; readyToSendCount uses the send's own test
 // Routes don't arrive by themselves here: the dispatcher's side is `publishRoutes` / `pullBack` on the
 // fake controls, and in demo mode a route is published a few seconds after a send.
 import { DeliveryStatus, FulfillmentMethod, LineOrderStatus, PaymentStatus } from '../generated/enums';
@@ -111,6 +112,9 @@ export function createFakeDispatch(db: Seed, wait: () => Promise<void>, options:
       const dayRoutes = routes.filter(r => r.date === day(date));
       const sentAt = live.map(d => d.sentToRoutingAt).filter((x): x is string => !!x).sort();
       const sent = sentAt.length;
+      // The same test the send applies: packed, and not already sent.
+      const ready = live.filter(d => d.status === DeliveryStatus.Packed && !d.sentToRoutingAt && !d.externalOrderId).length;
+      const toPack = live.filter(d => d.status === DeliveryStatus.Scheduled).length;
       const stage = live.length === 0 ? 1 : dayRoutes.some(r => r.status === Unpublished) ? 6 : dayRoutes.some(r => !isClosed(r)) ? 5
         : sent === 0 ? 2 : sent === live.length ? 3 : 4;
       const items = dayRoutes.map(toRouteItem);
@@ -118,7 +122,9 @@ export function createFakeDispatch(db: Seed, wait: () => Promise<void>, options:
       const statusLine = [
         '',
         'No local deliveries scheduled for this day.',
-        `${plural(live.length, 'delivery', 'deliveries')} ready to send for routing.`,
+        ready === 0 ? `Nothing packed yet — ${plural(toPack, 'delivery', 'deliveries')} still to pack.`
+          : toPack ? `${ready} of ${live.length} packed and ready to send for routing — ${toPack} still to pack.`
+          : `${plural(ready, 'delivery', 'deliveries')} ready to send for routing.`,
         `${plural(sent, 'order', 'orders')} sent${at} — no route published yet.`,
         `${sent} of ${live.length} orders sent${at} — ${plural(live.length - sent, 'delivery', 'deliveries')} still to send.`,
         `${plural(items.length, 'route', 'routes')} published, ${items.reduce((s, r) => s + r.loadedStopCount, 0)} of ${items.reduce((s, r) => s + r.stopCount, 0)} stops loaded.`,
@@ -130,8 +136,8 @@ export function createFakeDispatch(db: Seed, wait: () => Promise<void>, options:
         deliveryCount: live.length, sentCount: sent, unsentCount: live.length - sent, firstSentAt: sentAt[0] ?? null,
         unpaidCount: live.filter(d => d.paymentStatus !== PaymentStatus.Paid).length,
         paymentFailedCount: live.filter(d => d.paymentStatus === PaymentStatus.Failed).length,
-        notYetPackedCount: live.filter(d => d.status === DeliveryStatus.Scheduled).length,
-        canSend: live.length - sent > 0,
+        notYetPackedCount: toPack, readyToSendCount: ready,
+        canSend: ready > 0,
       });
     },
 
@@ -194,6 +200,7 @@ export function createFakeDispatch(db: Seed, wait: () => Promise<void>, options:
         const notes = [...new Set(deliveries.map(x => x.accessNotes).filter((n): n is string => !!n?.trim()))];
         return {
           externalStopId: first.externalStopId, sequenceOrder: first.sequenceOrder, loadingPosition: 0, plannedArrival: first.plannedArrival, deliveries,
+          routeStopIds: rows.map(r => r.routeStopId),
           label: deliveries.length ? [...new Set(deliveries.map(x => x.customerName))].join('; ') : first.label ?? first.address ?? '(unnamed stop)',
           address: first.address ?? [firstDelivery?.deliveryStreet, firstDelivery?.deliveryCity].filter(Boolean).join(', '),
           accessNotes: notes.length ? notes.join(' · ') : null,

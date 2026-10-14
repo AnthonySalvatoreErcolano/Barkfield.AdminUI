@@ -76,7 +76,7 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
         </Alert>
       ) : null}
 
-      <StageBanner board={board} date={date} packedCount={unsentPacked.length}
+      <StageBanner board={board} date={date}
         action={<Can call="POST /api/dispatch/send">
           {unsentPacked.length ? (
             <Button variant={firstSend ? 'accent' : 'secondary'} iconLeft="route"
@@ -150,7 +150,7 @@ function Board({ board, date, onOpenRoute }: { board: DispatchBoard; date: strin
   );
 }
 
-function StageBanner({ board, date, packedCount, action }: { board: DispatchBoard; date: string; packedCount: number; action: ReactNode }) {
+function StageBanner({ board, date, action }: { board: DispatchBoard; date: string; action: ReactNode }) {
   const stage = board.stage as number;
   const sentAt = board.firstSentAt ? timeOf(board.firstSentAt) : null;
   switch (stage) {
@@ -182,14 +182,13 @@ function StageBanner({ board, date, packedCount, action }: { board: DispatchBoar
         </Alert>
       );
     case DispatchStage.ReadyToSend:
-      // The API counts every delivery as "ready to send" before anything is packed; only packed boxes can go.
-      return packedCount
-        ? <Alert tone="info" title={`Ready to send ${date === todayIso() ? 'today' : formatDay(date)}`} action={action}>
-            {plural(packedCount, 'packed delivery is', 'packed deliveries are')} ready for Routific.{board.notYetPackedCount ? ` ${plural(board.notYetPackedCount, 'more isn’t', 'more aren’t')} packed yet.` : ''}
-          </Alert>
-        : <Alert tone="info" title="Waiting for boxes to be packed">
-            {plural(board.deliveryCount, 'local delivery', 'local deliveries')} {date === todayIso() ? 'today' : `on ${formatDay(date)}`}, none packed yet. Only packed boxes go to Routific.
-          </Alert>;
+      // The API's line counts with the send's own test, so it never promises a send the button would skip.
+      return (
+        <Alert tone="info" title={board.readyToSendCount ? `Ready to send ${date === todayIso() ? 'today' : formatDay(date)}` : 'Waiting for boxes to be packed'}
+          action={board.readyToSendCount ? action : null}>
+          {board.statusLine} Only packed boxes go to Routific.
+        </Alert>
+      );
     default:
       return <Alert tone="info" title="Nothing to dispatch">{board.statusLine}</Alert>;
   }
@@ -205,15 +204,12 @@ function Count({ label, value, warn, danger, onClick }: { label: string; value: 
 }
 
 function RouteCard({ route: r, onOpen }: { route: RouteListItem; onOpen: () => void }) {
-  // Ad-hoc stops can't be ticked (the load list gives no row id for them), so they'd hold the count
-  // short forever. Drop this once the API puts routeStopIds on every stop.
-  const doorsteps = r.stopCount - r.adHocStopCount;
   return (
     <Card tone={r.wasPulledBack ? 'default' : 'brand'} eyebrow={r.driverName ? `Driver: ${r.driverName}` : 'No driver yet'}
       title={<span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>{r.name}{r.wasPulledBack ? <Badge tone="danger" dot>Pulled back</Badge> : null}</span>}>
       <div style={{ fontSize: 14.5, marginBottom: 12, color: r.wasPulledBack ? undefined : 'var(--teal-100)' }}>
-        {r.loadedStopCount} of {plural(doorsteps, 'doorstep')} loaded
-        {r.adHocStopCount ? ` · ${plural(r.adHocStopCount, 'extra stop')} added in Routific` : ''}
+        {r.loadedStopCount} of {plural(r.stopCount, 'stop')} loaded
+        {r.adHocStopCount ? ` (${r.adHocStopCount} added in Routific)` : ''}
         {r.publishedAt ? ` · published ${timeOf(r.publishedAt)}` : ''}
       </div>
       <Button variant={r.wasPulledBack ? 'secondary' : 'cream'} size="sm" iconLeft="list" onClick={onOpen}>Open load list</Button>
