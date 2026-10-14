@@ -37,6 +37,8 @@ export function LoadListPage() {
   if (error && !data) return <LoadError error={error} onRetry={() => refetch()} what="the load list" />;
   if (!data) return <p style={{ color: 'var(--text-muted)' }}>Loading…</p>;
 
+  // Ad-hoc stops can't be ticked yet (no row id on the stop), so progress counts doorsteps with boxes.
+  // Drop this once the API puts routeStopIds on every stop.
   const doorsteps = data.stops.filter(s => !s.isAdHoc);
   const loaded = doorsteps.filter(s => s.isLoaded).length;
   const unpaid = data.unpaidStops ?? data.stops.filter(s => s.hasUnpaidDelivery);

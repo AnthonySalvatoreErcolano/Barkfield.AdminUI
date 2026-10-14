@@ -205,7 +205,9 @@ function Count({ label, value, warn, danger, onClick }: { label: string; value: 
 }
 
 function RouteCard({ route: r, onOpen }: { route: RouteListItem; onOpen: () => void }) {
-  const doorsteps = r.stopCount - r.adHocStopCount; // ad-hoc stops have nothing to load
+  // Ad-hoc stops can't be ticked (the load list gives no row id for them), so they'd hold the count
+  // short forever. Drop this once the API puts routeStopIds on every stop.
+  const doorsteps = r.stopCount - r.adHocStopCount;
   return (
     <Card tone={r.wasPulledBack ? 'default' : 'brand'} eyebrow={r.driverName ? `Driver: ${r.driverName}` : 'No driver yet'}
       title={<span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>{r.name}{r.wasPulledBack ? <Badge tone="danger" dot>Pulled back</Badge> : null}</span>}>

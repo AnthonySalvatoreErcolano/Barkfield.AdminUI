@@ -7,7 +7,8 @@
 //   - withdraw: refused for one never sent; otherwise unlinked and sendable again
 //   - the load list: one entry per doorstep (shared addresses carry two boxes), in LOADING order (the
 //     reverse of driving), quantities as actually going, access notes and phones from everyone at the door
-//   - an ad-hoc stop (added in Routific) has no row to tick, so it never reads as loaded — as in the API
+//   - an ad-hoc stop (added in Routific) has a route-stop row, but the load list carries no id for it
+//     (routeStopId is only on deliveries), so nobody can tick it and it never reads as loaded — as in the API
 // Routes don't arrive by themselves here: the dispatcher's side is `publishRoutes` / `pullBack` on the
 // fake controls, and in demo mode a route is published a few seconds after a send.
 import { DeliveryStatus, FulfillmentMethod, LineOrderStatus, PaymentStatus } from '../generated/enums';
