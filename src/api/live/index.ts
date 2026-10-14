@@ -147,6 +147,19 @@ export function createLiveApi(): Api {
     },
     products: {
       list: (query, signal) => http.get('/api/products', { query, signal }),
+      get: (productId, signal) => http.get('/api/products/{productId}', { path: { productId }, signal }),
+      searchSquare: (q, limit) => http.get('/api/products/search', { query: { q, limit } }),
+      import: squareVariationId => http.post('/api/products/import', { body: { squareVariationId } }), // 200 with the id, new or existing
+      async sync(productId) {
+        await http.post('/api/products/{productId}/sync', { path: { productId } });
+      },
+      syncAll: () => http.post('/api/products/sync'),
+      async deactivate(productId) {
+        await http.delete('/api/products/{productId}', { path: { productId } });
+      },
+      async reactivate(productId) {
+        await http.post('/api/products/{productId}/reactivate', { path: { productId } });
+      },
     },
     billing: {
       discounts: () => http.get('/api/discounts'),

@@ -236,8 +236,28 @@ export interface SubscriptionsPort {
   jumpTo(subscriptionId: string, groupId: string, itemId: string): Promise<void>;
 }
 
+export type ProductListQuery = NonNullable<paths['/api/products']['get']['parameters']['query']>;
+export type CatalogSearchResult = Schemas['CatalogSearchResultDto'];
+export type CatalogSyncResult = Schemas['CatalogSyncResult'];
+
+/**
+ * The catalog mirrors Square, which owns names and prices: products are imported and synced, never
+ * created or edited here. Every Square call can fail with a 502 (OutageError or CredentialError).
+ */
 export interface ProductsPort {
-  list(query: NonNullable<paths['/api/products']['get']['parameters']['query']>, signal?: AbortSignal): Promise<ProductPage>;
+  list(query: ProductListQuery, signal?: AbortSignal): Promise<ProductPage>;
+  get(productId: string, signal?: AbortSignal): Promise<Product>;
+  /** Square's catalog, not ours — every variation of each matching item, marked if already here. */
+  searchSquare(q: string, limit?: number): Promise<CatalogSearchResult[]>;
+  /** Idempotent: an existing product is refreshed and restored, not duplicated. Resolves its id. */
+  import(squareVariationId: string): Promise<string>;
+  /** Refresh one product's name, price and SKU. 404 when Square no longer has it. */
+  sync(productId: string): Promise<void>;
+  /** Every active product. Ones Square no longer prices are reported in `missing`, never removed. */
+  syncAll(): Promise<CatalogSyncResult>;
+  /** Soft: subscription lines and history keep it; it drops out of pickers. */
+  deactivate(productId: string): Promise<void>;
+  reactivate(productId: string): Promise<void>;
 }
 
 export interface Api {

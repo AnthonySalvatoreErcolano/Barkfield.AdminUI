@@ -1,4 +1,4 @@
-// Fake DeliveriesPort and ProductsPort. The guards and messages are the API domain's own
+// Fake DeliveriesPort. The guards and messages are the API domain's own
 // (Delivery.cs): closed deliveries refuse changes, paid contents are locked, packing needs every line
 // resolved, a delivery cannot be emptied. Awkward on purpose:
 //   - Tess Nolan's delivery 409s on its first change, as if the procurement board saved a line at the
@@ -8,7 +8,7 @@
 import { DeliveryLineSource, DeliveryStatus, DeliveryStatusNames, FulfillmentMethod, LineOrderStatus, PaymentStatus, SubscriptionStatus } from '../generated/enums';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import { SORT_KEYS } from '../sortKeys';
-import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, LineAction, ProductsPort } from '../ports';
+import type { DeliveriesPort, DeliveryDetail, DeliveryLine, DueSubscription, LineAction } from '../ports';
 import { makeLine, recompute, toDeliveryListItem } from './deliveryModel';
 import { completeDelivery, manifest } from './subscriptionModel';
 import type { Seed } from './seed';
@@ -389,26 +389,6 @@ export function createFakeDeliveries(db: Seed, wait: () => Promise<void>): Deliv
       // A stand-in picture: the real endpoint proxies Routific's proof-of-delivery image bytes.
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="#C09473"/><rect x="220" y="200" width="200" height="140" fill="#8a6a4d"/><text x="320" y="420" font-family="sans-serif" font-size="26" fill="#fff" text-anchor="middle">Proof of delivery (sample)</text></svg>`;
       return new Blob([svg], { type: 'image/svg+xml' });
-    },
-  };
-}
-
-export function createFakeProducts(db: Seed, wait: () => Promise<void>): ProductsPort {
-  return {
-    async list(q) {
-      await wait();
-      const term = q.searchTerm?.trim().toLowerCase();
-      const rows = db.products
-        .filter(p => q.includeInactive || p.isActive)
-        .filter(p => !term || [p.name, p.sku ?? ''].some(v => v.toLowerCase().includes(term)))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      const pageSize = Math.min(Math.max(Number(q.pageSize ?? 25), 1), 200);
-      const pageNumber = Math.max(Number(q.pageNumber ?? 1), 1);
-      const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-      return {
-        items: structuredClone(rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)),
-        totalCount: rows.length, pageNumber, pageSize, totalPages, hasNextPage: pageNumber < totalPages, hasPreviousPage: pageNumber > 1,
-      };
     },
   };
 }

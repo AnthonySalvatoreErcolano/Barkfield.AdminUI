@@ -7,7 +7,8 @@
 import { RateLimitError, SignInError, ValidationError } from '../errors';
 import type { Api } from '../ports';
 import { createFakeCustomers } from './customers';
-import { createFakeDeliveries, createFakeProducts } from './deliveries';
+import { createFakeDeliveries } from './deliveries';
+import { createFakeProducts } from './products';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
