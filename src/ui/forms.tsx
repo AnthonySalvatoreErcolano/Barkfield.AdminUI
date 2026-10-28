@@ -1,7 +1,7 @@
 // Input, Select, Textarea, Checkbox, Radio, Switch — ported from design/components/forms.
 // Change from the source: ids come from useId() rather than the label text, so two fields sharing a
 // label on one page cannot share an id.
-import { useId, type ChangeEvent, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useId, type ChangeEvent, type CSSProperties, type InputHTMLAttributes, type ReactNode, type Ref, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Icon, type IconName } from './core';
 import { cx, injectStyles } from './injectStyles';
 
@@ -123,6 +123,8 @@ export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaE
   hint?: ReactNode;
   error?: ReactNode;
   style?: CSSProperties;
+  /** React 19 passes a ref as a prop; it lands on the <textarea> (e.g. to insert at the cursor). */
+  ref?: Ref<HTMLTextAreaElement>;
 }
 
 export function Textarea({ label, hint, error, id, rows = 4, style, ...rest }: TextareaProps) {

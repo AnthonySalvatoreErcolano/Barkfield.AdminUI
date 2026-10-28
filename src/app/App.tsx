@@ -23,6 +23,7 @@ const BUILT: Record<string, ComponentType> = {
   subscriptions: lazy(() => import('../pages/subscriptions/SubscriptionsRoutes').then(m => ({ default: m.SubscriptionsRoutes }))),
   dispatch: lazy(() => import('../pages/dispatch/DispatchRoutes').then(m => ({ default: m.DispatchRoutes }))),
   products: lazy(() => import('../pages/products/ProductsRoutes').then(m => ({ default: m.ProductsRoutes }))),
+  notifications: lazy(() => import('../pages/notifications/NotificationsRoutes').then(m => ({ default: m.NotificationsRoutes }))),
   users: lazy(() => import('../pages/users/UsersRoutes').then(m => ({ default: m.UsersRoutes }))),
 };
 

@@ -137,7 +137,7 @@ describe('the Square link', () => {
 
     await user.click(screen.getByRole('button', { name: 'Try the Square link again' }));
     expect(await screen.findByText('Linked to Square', { selector: '.br-badge' })).toBeInTheDocument();
-    expect(screen.queryByText('Try the Square link again')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Try the Square link again')).not.toBeInTheDocument());
   });
 });
 

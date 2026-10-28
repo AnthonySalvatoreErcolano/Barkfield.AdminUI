@@ -31,6 +31,7 @@ const GRANTS: Record<string, readonly Permission[]> = {
     'delivery:view', 'delivery:pack',
     'billing:view', 'billing:charge',
     'dispatch:view',
+    'notification:view', // see what was sent, change nothing (011_notifications.sql)
     'product:view',
   ],
   [DRIVER]: ['delivery:view', 'dispatch:view'],
