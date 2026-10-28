@@ -15,6 +15,7 @@ export function createFakeCustomers(db: Seed, wait: () => Promise<void>): Custom
   const conflictPending = new Set(db.customers.filter(c => c.lastName === 'Whitaker').map(c => c.id));
   const driftPending = new Set(db.customers.filter(c => c.fullName === 'Tom Kearney').map(c => c.id));
   const squareBroken = new Set(db.customers.filter(c => c.lastName === 'Bell').map(c => c.id));
+  const preferences = new Map<string, { marketingConsent: boolean; consentRecordedAt: string | null; operationalOptOut: boolean; updatedAt: string | null }>();
   let squareRetryFailed = false;
 
   const find = (id: string) => {
@@ -177,6 +178,26 @@ export function createFakeCustomers(db: Seed, wait: () => Promise<void>): Custom
       c.isSyncedToSquare = true;
       touch(c);
       return { customerId: id, squareSynced: true, squareError: null };
+    },
+
+    async notificationPreferences(id) {
+      await wait();
+      find(id);
+      const p = preferences.get(id) ?? { marketingConsent: false, consentRecordedAt: null, operationalOptOut: false, updatedAt: null };
+      // The API's DTO carries a token field; it is never filled for the UI, and the UI never reads it.
+      return { customerId: id, ...p, unsubscribeToken: '' };
+    },
+
+    async setNotificationPreferences(id, body) {
+      await wait();
+      find(id);
+      const before = preferences.get(id);
+      const stamp = new Date().toISOString();
+      preferences.set(id, {
+        marketingConsent: body.marketingConsent, operationalOptOut: body.operationalOptOut, updatedAt: stamp,
+        // When consent was given (or withdrawn) — what staff point to if asked.
+        consentRecordedAt: before?.marketingConsent === body.marketingConsent ? before?.consentRecordedAt ?? null : stamp,
+      });
     },
 
     async pets(id, includeInactive) {

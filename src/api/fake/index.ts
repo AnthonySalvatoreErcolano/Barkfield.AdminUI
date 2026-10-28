@@ -11,6 +11,7 @@ import { createFakeDeliveries } from './deliveries';
 import { createFakeProducts } from './products';
 import { createFakePets } from './pets';
 import { createFakeDispatch, type FakeRoutific } from './dispatch';
+import { createFakeNotifications } from './notifications';
 import { createFakeProcurement } from './procurement';
 import { createFakeBilling } from './billing';
 import { createFakeSubscriptions } from './subscriptions';
@@ -129,6 +130,10 @@ export function createFakeApi(options: { latency?: boolean; persistSession?: boo
     billing: createFakeBilling(db, wait),
     subscriptions: createFakeSubscriptions(db, wait),
     dispatch,
+    notifications: createFakeNotifications(db, wait, () => {
+      const u = users.find(x => x.id === signedInId);
+      return u ? { email: u.email, name: u.name } : null;
+    }, { autoDrain: options.latency !== false }),
     fake: {
       db,
       routific: dispatch.routific,

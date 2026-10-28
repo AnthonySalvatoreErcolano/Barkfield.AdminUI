@@ -16,6 +16,7 @@ import { Alert, Badge, Breadcrumbs, Button, Card, Chip, DataTable, DetailField, 
 import { NextDelivery } from '../subscriptions/SubscriptionsListPage';
 import { DeliveryDetailsDialog } from './DeliveryDetailsDialog';
 import { PetsTab } from './PetsTab';
+import { EmailPreferencesCard } from './EmailPreferencesCard';
 import { customerKeys } from './keys';
 
 /** Passed in navigation state after a save whose Square half did not go through. */
@@ -130,6 +131,7 @@ function CustomerView({ customer }: { customer: CustomerDetail }) {
               <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)' }}>Read live at dispatch — changes reach tonight’s run.</p>
             </div>
           </Card>
+          {canCall('GET /api/customers/{customerId}/notification-preferences') ? <EmailPreferencesCard customer={customer} /> : null}
           <Card tone="cream" title="Card on file" eyebrow="Square">
             <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.5 }}>
               Cards are kept in Square, never here. To add or change {customer.firstName}’s card, open their profile in Square

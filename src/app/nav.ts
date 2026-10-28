@@ -49,6 +49,12 @@ export const NAV: NavSection[] = [
       { id: 'users', label: 'Users', path: '/users', icon: 'user', requires: 'GET /api/users', built: true },
     ],
   },
+  {
+    title: 'Messages',
+    screens: [
+      { id: 'notifications', label: 'Notifications', path: '/notifications', icon: 'bell', requires: 'GET /api/notifications/rules', built: true },
+    ],
+  },
 ];
 
 export const SCREENS: Screen[] = NAV.flatMap(s => s.screens);

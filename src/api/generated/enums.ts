@@ -123,6 +123,70 @@ export const LineOrderStatusNames: Record<LineOrderStatus, string> = {
   7: "Shorted",
 };
 
+export const NotificationAudience = {
+  Customer: 1,
+  Internal: 2,
+} as const;
+export type NotificationAudience = (typeof NotificationAudience)[keyof typeof NotificationAudience];
+export const NotificationAudienceNames: Record<NotificationAudience, string> = {
+  1: "Customer",
+  2: "Internal",
+};
+
+export const NotificationStatus = {
+  Queued: 1,
+  Sent: 2,
+  Failed: 3,
+  Suppressed: 4,
+  Skipped: 5,
+  HeldForReview: 6,
+} as const;
+export type NotificationStatus = (typeof NotificationStatus)[keyof typeof NotificationStatus];
+export const NotificationStatusNames: Record<NotificationStatus, string> = {
+  1: "Queued",
+  2: "Sent",
+  3: "Failed",
+  4: "Suppressed",
+  5: "Skipped",
+  6: "HeldForReview",
+};
+
+export const NotificationTier = {
+  System: 1,
+  Operational: 2,
+  Marketing: 3,
+} as const;
+export type NotificationTier = (typeof NotificationTier)[keyof typeof NotificationTier];
+export const NotificationTierNames: Record<NotificationTier, string> = {
+  1: "System",
+  2: "Operational",
+  3: "Marketing",
+};
+
+export const NotificationTriggerKind = {
+  DeliveryStatus: 1,
+  LineOrderStatus: 2,
+  ProcurementStatus: 3,
+  PaymentStatus: 4,
+  SubscriptionStatus: 5,
+  DispatchEvent: 6,
+  BeforeNextDelivery: 20,
+  CardExpiring: 21,
+  Dormant: 22,
+} as const;
+export type NotificationTriggerKind = (typeof NotificationTriggerKind)[keyof typeof NotificationTriggerKind];
+export const NotificationTriggerKindNames: Record<NotificationTriggerKind, string> = {
+  1: "DeliveryStatus",
+  2: "LineOrderStatus",
+  3: "ProcurementStatus",
+  4: "PaymentStatus",
+  5: "SubscriptionStatus",
+  6: "DispatchEvent",
+  20: "BeforeNextDelivery",
+  21: "CardExpiring",
+  22: "Dormant",
+};
+
 export const PaymentStatus = {
   NotCharged: 1,
   Paid: 2,
@@ -191,4 +255,18 @@ export const SubscriptionStatusNames: Record<SubscriptionStatus, string> = {
   2: "Active",
   3: "Paused",
   4: "Canceled",
+};
+
+export const SuppressionReason = {
+  Unsubscribed: 1,
+  HardBounce: 2,
+  Complaint: 3,
+  Manual: 4,
+} as const;
+export type SuppressionReason = (typeof SuppressionReason)[keyof typeof SuppressionReason];
+export const SuppressionReasonNames: Record<SuppressionReason, string> = {
+  1: "Unsubscribed",
+  2: "HardBounce",
+  3: "Complaint",
+  4: "Manual",
 };

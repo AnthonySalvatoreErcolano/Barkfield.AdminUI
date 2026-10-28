@@ -68,9 +68,10 @@ The **Dashboard** shows where today stands across all of these at a glance.
 What you see depends on your role. Buttons you can't use are simply hidden.
 
 - **Administrator** — everything, including managing staff accounts.
-- **Manager** — runs the whole operation day to day, but doesn't manage staff accounts.
+- **Manager** — runs the whole operation day to day, including the automatic emails, but doesn't
+  manage staff accounts.
 - **Staff** — customers, subscriptions, packing, and charging the day's cards. Can see dispatch but
-  not send to Routific.
+  not send to Routific. Can see the automatic emails and what was sent, but not change them.
 - **Driver** — can see deliveries, the dispatch board and the load list. Can't change anything.
 
 If you need something you can't see, ask an administrator to change your role.
@@ -111,6 +112,9 @@ include archived customers.
 - **Card on file** — kept in Square. To add or change a card, open the customer in Square.
 - **Square link** — every customer should be linked to their Square profile, or their card can't be
   charged. If the link is missing, the page says so and offers to try again.
+- **Email preferences** — whether they've agreed to marketing emails (and when that was recorded),
+  and whether they want emails about their orders. Record it here when a customer tells you at the
+  counter.
 - **Tabs** for their pets, subscriptions and past deliveries.
 
 **Adding a customer** — the page first checks Square for someone with the same email or phone, so
@@ -327,6 +331,92 @@ Your own details, and where you change your password.
 
 ---
 
+### Notifications
+
+Emails the shop sends automatically. A **rule** says *"when this happens, send that email"* — for
+example, *"when a delivery becomes delivered, send 'Delivery confirmation'."* Every email a rule writes
+lands in the **outbox**, which is also the permanent record of what was sent.
+
+> **Right now, no email service is connected.** Nothing actually reaches anyone's inbox yet. A yellow
+> banner at the top of every Notifications tab says so, and in the outbox **"Sent" means "would have
+> been sent."** This changes once an email provider is set up.
+
+The section has four tabs.
+
+#### Rules
+
+Each rule reads as a sentence, with one of three states:
+
+- **Off** — it does nothing.
+- **Dry run** — it writes the emails it *would* send, but sends none. They appear in the outbox as
+  "Not sent (dry run)."
+- **Live** — it sends.
+
+**A new rule always starts off and in dry run.** That's deliberate — an email can't be unsent. Take a
+new rule live in three steps:
+
+1. **Turn it on.** It's now in dry run.
+2. **Read what it would have sent** — the link on the rule takes you to those emails in the outbox.
+3. **Go live** when you're happy with them. The page asks you to confirm.
+
+A live rule can go **back to dry run** at any time.
+
+**Making a rule** — choose what it reacts to (a delivery's status, a product on a delivery, a payment,
+or a number of days before the next delivery), then the email it sends and who it goes to: the
+customer, or the shop. *"Days before the next delivery"* rules are reminders, checked once a day; each
+customer gets one reminder per delivery.
+
+**A rule's page** lets you rename it, change its email, and **preview** it for a real delivery — exactly
+what that customer would receive. If any detail in the email couldn't be filled in (shown like
+`{{ProductName}}`), it's flagged in red: the customer would see it like that. You can also **send a
+test** to yourself.
+
+#### Outbox
+
+Every email, newest first. Filter by status, rule or date. Click one to read exactly what it said.
+
+| Status | Means | What to do |
+|---|---|---|
+| Waiting / Scheduled | Queued; scheduled ones wait for quiet hours to end | Nothing |
+| Sent | Sent (or, for now, would have been) | Nothing |
+| Not sent (dry run) | Its rule was in dry run, or sending was switched off | Nothing — not an error |
+| Address blocked | The address is on the blocked list | Nothing |
+| Failed | Couldn't be sent | **Retry** |
+| Held for review | Deliberately not sent — see below | Read it; **send it** if it's safe |
+
+**Held for review.** If a customer's pet has any recorded allergy, an email saying *"we've sent
+something else instead"* is **never sent automatically**. The system can't tell whether the substitute
+contains something the pet is allergic to. So it waits: read it, check the substitute against the pet's
+allergies on the customer's page, and press **"It's safe — send it"** only if it is.
+
+**Send waiting emails now** sends anything due straight away, rather than waiting for the next
+automatic pass.
+
+#### Templates
+
+What each email says. Plain text — the subject and the message. Details like the customer's name or the
+delivery date are added with the **Insert details** buttons, which offer only what's available for the
+rule's trigger. Built-in templates can be reworded but not deleted, and a template a rule uses can't be
+deleted either.
+
+**Marketing** templates only ever go to customers who've agreed to marketing emails, and always carry
+an unsubscribe link.
+
+#### Settings
+
+- **Send emails** — the master switch. Turn it off to stop all sending at once; rules still write their
+  emails, marked as not sent.
+- **Quiet hours** — emails written during these hours wait until they end.
+- **Most emails one customer gets in a day** — a safety cap. 0 means no limit.
+- **The shop's address** — where rules addressed to the shop write (a refused card, stock blocking a
+  delivery). Without one, those rules write nothing.
+- **Reminders** — when the daily check last ran, and a button to run it now. Running it twice in a day
+  is safe.
+- **Blocked addresses** — nothing is ever sent to these. Unsubscribes and bounced addresses land here
+  automatically; you can add one by hand.
+
+---
+
 ## Messages you might see
 
 - **"This delivery just changed" / "This customer changed while you were editing."** Someone else
@@ -353,6 +443,8 @@ Your own details, and where you change your password.
 5. **Send the day to Routific once.** If the banner says "waiting for a route," it's already gone.
 6. **If a route is pulled back, stop loading** until the new plan arrives.
 7. **Load in the order on the load list.**
+8. **Read a rule's dry run before taking it live.** An email can't be unsent.
+9. **Check every "held for review" email against the pet's allergies** before sending it.
 
 ---
 
@@ -368,3 +460,6 @@ Your own details, and where you change your password.
 - **Stop** — one doorstep on a route; it can have more than one box.
 - **Blocked** — a box waiting on a decision about an out-of-stock product.
 - **Archived / Deactivated / Discontinued** — hidden and set aside, but kept and restorable.
+- **Rule** — "when this happens, send that email."
+- **Dry run** — a rule writing the emails it would send, without sending them.
+- **Outbox** — every email the shop has written, sent or not.

@@ -43,6 +43,9 @@ export interface CustomersPort {
   pets(customerId: string, includeInactive?: boolean): Promise<Pet[]>;
   subscriptions(customerId: string, includeCanceled?: boolean): Promise<SubscriptionListItem[]>;
   deliveries(customerId: string, page: { pageNumber: number; pageSize: number }): Promise<DeliveryPage>;
+  /** Email consent, recorded by staff (it's usually given across the counter). Never shows the unsubscribe token. */
+  notificationPreferences(customerId: string): Promise<NotificationPreferences>;
+  setNotificationPreferences(customerId: string, body: Schemas['NotificationPreferencesRequest']): Promise<void>;
 }
 
 export type Allergy = Schemas['AllergyDto'];
@@ -310,6 +313,86 @@ export interface DispatchPort {
   setStopLoaded(routeId: string, routeStopId: string, loaded: boolean): Promise<void>;
 }
 
+export type NotificationRule = Schemas['NotificationRuleDto'];
+export type NotificationTemplate = Schemas['NotificationTemplateDto'];
+export type OutboxEntry = Schemas['NotificationOutboxEntryDto'];
+export type OutboxPage = Schemas['PagedResultOfNotificationOutboxEntryDto'];
+export type OutboxQuery = NonNullable<paths['/api/notifications/outbox']['get']['parameters']['query']>;
+export type NotificationTrigger = Schemas['NotificationTriggerDescriptor'];
+export type NotificationPreview = Schemas['NotificationPreview'];
+export type NotificationSuppression = Schemas['NotificationSuppressionDto'];
+export type NotificationPreferences = Schemas['CustomerNotificationPreferencesDto'];
+export type CreateNotificationRule = Schemas['CreateNotificationRuleRequest'];
+export type CreateNotificationTemplate = Schemas['CreateNotificationTemplateRequest'];
+export type NotificationSettingsWrite = Schemas['NotificationSettingsRequest'];
+
+/**
+ * GET /api/notifications/settings. ⚠️ HAND-WRITTEN: the API returns an anonymous object there, so the
+ * spec has no schema for it (asked the API side to name it, 2026-10-28). Read from the live response.
+ * Replace with the generated type as soon as the spec carries one.
+ */
+export interface NotificationSettings extends NotificationSettingsWrite {
+  hasQuietHours: boolean;
+  /** Whether an internal rule has an address to write to. With none, internal rules queue nothing. */
+  canSendInternal: boolean;
+  lastSweepDate: string | null;
+  updatedAt: string | null;
+  /** In the API's own words, e.g. "Logging only — nothing is sent." */
+  transportDescription: string;
+  /** False while the transport only logs. Every "Sent" in the outbox then means "would have been". */
+  transportIsReal: boolean;
+}
+
+/**
+ * The notification centre (PAGES.md §10): rules ("when this happens, send that template"), templates,
+ * and the outbox — the queue and the permanent log in one. Rule and template writes take an optional
+ * revision, same as the guarded delivery writes.
+ */
+export interface NotificationsPort {
+  /** What a rule can be built on, with each kind's statuses and placeholders. Never hard-code these. */
+  triggers(): Promise<NotificationTrigger[]>;
+
+  templates(): Promise<NotificationTemplate[]>;
+  template(templateId: string): Promise<NotificationTemplate>;
+  /** Not in the System tier — the API refuses it. Resolves the new id. */
+  createTemplate(body: CreateNotificationTemplate): Promise<string>;
+  rewordTemplate(templateId: string, body: { name: string; subject: string; bodyText: string }, revision?: number): Promise<void>;
+  /** Refused for a built-in template, or one a rule still uses — with a message saying which. */
+  deleteTemplate(templateId: string): Promise<void>;
+
+  rules(): Promise<NotificationRule[]>;
+  rule(ruleId: string): Promise<NotificationRule>;
+  /** Always born disabled and in dry run, whatever is sent. Resolves the new id. */
+  createRule(body: CreateNotificationRule): Promise<string>;
+  renameRule(ruleId: string, name: string, revision?: number): Promise<void>;
+  changeRuleTemplate(ruleId: string, templateId: string, revision?: number): Promise<void>;
+  /** Whether the rule reacts at all. Separate from going live. */
+  setRuleEnabled(ruleId: string, enabled: boolean): Promise<void>;
+  /** Clearing dry run is going live. Its own decision, after reading what dry run would have sent. */
+  setRuleDryRun(ruleId: string, dryRun: boolean): Promise<void>;
+  deleteRule(ruleId: string): Promise<void>;
+  /** Renders the rule against a real delivery. Unresolved placeholders are left visible in the text. */
+  preview(ruleId: string, deliveryId: string): Promise<NotificationPreview>;
+  /** Queued like the real thing, marked [TEST]. To the signed-in user unless toEmail. Resolves the entry id. */
+  test(ruleId: string, deliveryId: string, toEmail?: string): Promise<string>;
+
+  /** Newest first. */
+  outbox(query: OutboxQuery, signal?: AbortSignal): Promise<OutboxPage>;
+  outboxEntry(entryId: string): Promise<OutboxEntry>;
+  /** Failed → back in the queue; HeldForReview → released. Refused for one already sent. */
+  retry(entryId: string): Promise<void>;
+  /** Send what's due now rather than waiting for the worker. */
+  drain(): Promise<Schemas['NotificationDrainResult']>;
+  /** The daily reminder sweep, now. `force` re-runs a day already done (still one reminder per cycle). */
+  sweep(force?: boolean): Promise<Schemas['NotificationSweepResult']>;
+
+  settings(): Promise<NotificationSettings>;
+  saveSettings(body: NotificationSettingsWrite): Promise<void>;
+  suppressions(): Promise<NotificationSuppression[]>;
+  suppress(body: Schemas['SuppressAddressRequest']): Promise<void>;
+  unsuppress(suppressionId: string): Promise<void>;
+}
+
 export interface Api {
   auth: AuthPort;
   users: UsersPort;
@@ -321,4 +404,5 @@ export interface Api {
   billing: BillingPort;
   subscriptions: SubscriptionsPort;
   dispatch: DispatchPort;
+  notifications: NotificationsPort;
 }

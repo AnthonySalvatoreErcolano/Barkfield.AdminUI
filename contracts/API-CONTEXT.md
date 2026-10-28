@@ -17,13 +17,13 @@ Companion file: `PAGES.md` — the screen-by-screen map of which endpoints feed 
 | | |
 |---|---|
 | Version | OpenAPI 3.1.1 |
-| Paths | 91 |
-| Operations | 110 |
-| Schemas | 116 |
-| Permission-gated operations | 102 |
-| Anonymous operations | 5 |
+| Paths | 112 |
+| Operations | 139 |
+| Schemas | 144 |
+| Permission-gated operations | 130 |
+| Anonymous operations | 6 |
 | Signed-in, no permission | 3 |
-| Enums with named values | 13 |
+| Enums with named values | 18 |
 <!-- END GENERATED contract-stats -->
 
 **Generate your client types from it. Do not hand-write request or response interfaces.** The API
