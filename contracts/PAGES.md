@@ -487,7 +487,171 @@ role's permissions, so present roles as a fixed set to assign from.
 
 ---
 
-## 10. Not in the UI
+## 10. Notification centre
+
+Staff-configured email automations. A **rule** says "when this happens, send that **template**", and
+every message it produces lands in the **outbox**, which is both the queue and the permanent log.
+
+Permissions: reads `notification:view` (Staff have it), writes `notification:manage`, and
+test/retry/drain/sweep `notification:send`. **`notification:manage` carries the accountability as
+well as the capability** — whoever holds it owns what goes out in the shop's name.
+
+### The shape to build
+
+Four screens, and they are not equally important. In order:
+
+**Rules list** — the home of this section. Each rule shows its `summary`, which the API builds as a
+sentence ("When a delivery becomes Delivered, send \"Delivery confirmation\"") so you never have to
+turn status numbers into words. Plus two independent toggles, which is the part to get right:
+
+| Flag | Means |
+|---|---|
+| `isEnabled` | The rule reacts at all |
+| `isDryRun` | It records what it *would* send, and sends nothing |
+
+`willSend` is `isEnabled && !isDryRun` and is what a "live" badge should read.
+
+**A new rule always arrives disabled and in dry run**, whatever you send — those fields are not
+accepted on create. That is deliberate: a rule that could be born live would let one click mail
+every customer before anybody read its wording, and mail cannot be unsent. So the intended flow is
+**enable → read the dry-run output → clear dry run**, and the UI should lead staff down it rather
+than offering one "activate" button that does both.
+
+**Outbox** — filterable by `status`, `customerId`, `ruleId` and a queued-date range, newest first.
+This is where "was the customer told, and what did it say?" gets answered, so show `bodyText`.
+
+| `status` | Show it as |
+|---|---|
+| `Queued` | waiting (`isWaiting` means not due yet — quiet hours or a scheduled send) |
+| `Sent` | sent, with `sentAt` |
+| `Failed` | failed, `attempts` exhausted — offer **Retry** |
+| `Suppressed` | the address is unsubscribed or bounced |
+| `Skipped` | dry run, or the kill switch was on. **Not an error** |
+| `HeldForReview` | deliberately not sent — see below. Offer **Retry** to release |
+
+`needsAttention` covers `Failed` and `HeldForReview` together, because the action is the same even
+though the reasons are opposite. `isHeldForReview` tells them apart, and you should: one is the
+transport's fault and one is ours.
+
+**Templates** — name, subject, body. Plain text with `{{placeholders}}`, **not** an HTML editor. The
+placeholders a template may use come from the trigger catalogue, so offer them per trigger rather
+than from a hard-coded list. `isSystem` templates may be reworded but not deleted; a template a rule
+uses cannot be deleted either, and the API says which.
+
+**Settings** — the kill switch (`isSendingEnabled`), quiet hours, the per-customer daily cap, and
+the internal recipient address.
+
+### The thing you must surface
+
+`GET /api/notifications/settings` returns `transportIsReal`. **It is `false` right now** — the email
+transport is a placeholder that logs instead of sending, because no provider has been chosen yet.
+
+Put that on the screen plainly. An outbox full of rows marked `Sent` otherwise reads as customers
+having been written to, and they have not been. This is the single most misleading thing in this
+section if it is left implicit.
+
+### Triggers — ask, never hard-code
+
+`GET /api/notifications/triggers` returns what a rule can be built on, with each one's selectable
+statuses and usable placeholders. Both move with the domain. Four kinds today:
+
+| Kind | Builds a rule on | Needs |
+|---|---|---|
+| `DeliveryStatus` | packed, routed, out for delivery, arrived, failed, cancelled | `toStatus` |
+| `LineOrderStatus` | one product: ordered, received, out of stock, substituted | `toStatus` |
+| `PaymentStatus` | a card charged or refused | `toStatus` |
+| `BeforeNextDelivery` | days before a subscription's next delivery | `offsetDays` |
+
+`isEventTrigger` is false for the last one. It takes **no status** and **requires `offsetDays`**, so
+the rule form has to change shape when it is chosen — that is the one piece of real conditional
+logic here.
+
+`fromStatus` is optional on the event kinds and means "from anything" when omitted. Offering it is
+worth it: *"Received, but only from Ordered"* is a different rule from *"Received"*, because staff go
+straight to Received for anything already on the shelf.
+
+### Held for review, and why it exists
+
+A **substitution** notice to a household with any pet with any recorded allergy is **not sent**. It
+is written, stored as `HeldForReview`, and waits for a person.
+
+Not because a clash was detected — because one **cannot** be. Allergies here are free text (Beef,
+Grain, Soy, Artificial preservatives) while products carry only the name Square gives them. Matching
+on names would catch the obvious cases and miss hidden ingredients, which is worse than not trying:
+a confident email about a substitution nobody checked.
+
+So word it as a decision the shop has to make, not an error. "Held — a pet in this household has
+recorded allergies. Read it and send if the substitute is safe." Releasing it is `POST
+…/outbox/{id}/retry`.
+
+### Preview and test, before anything goes live
+
+`POST /api/notifications/rules/{id}/preview` renders a rule against **a real delivery** and returns
+the subject and body a customer would get, plus `unresolvedPlaceholders` — anything the template
+asked for that the record could not fill. Show those prominently; an unresolved placeholder is a typo
+nobody notices until a customer does. They are left visible in the text rather than blanked, on
+purpose, so `{{ProductName}}` appearing is the intended behaviour and not a rendering bug.
+
+`POST …/rules/{id}/test` sends to the signed-in staff member unless you pass `toEmail`. It is queued
+through the same transport and lands in the outbox marked `[TEST]`.
+
+### Reminders
+
+`BeforeNextDelivery` rules are applied by a daily sweep rather than by a transition, because there is
+no transition — it is a question about the calendar. The worker runs it; `POST
+/api/notifications/reminders/sweep` runs it now, and `?force=true` re-runs a day already done.
+
+Forcing is safe and worth offering: a subscription still gets one reminder per cycle. What force
+defeats is the once-a-day claim, not the once-per-subscription guarantee. `alreadyRanToday` on the
+result is not a failure — it is the normal answer.
+
+### Consent
+
+| Audience | Needs consent | Unsubscribe link |
+|---|---|---|
+| Operational (delivery, stock, payment) | No — transactional | Not required, but `operationalOptOut` is honoured |
+| Marketing (promotions) | **Yes** | **Required** |
+
+`GET`/`PUT /api/customers/{id}/notification-preferences` is where staff record it, because consent is
+given across a counter far more often than through a form. **The unsubscribe token is never
+returned** — it changes consent without a sign-in, so it lives in mail and nowhere else. Do not build
+a screen expecting to see it.
+
+`POST /api/public/unsubscribe/{token}` is anonymous and always answers `204`, known token or not.
+Distinguishing them would make it a way to test whether a token is real.
+
+### Endpoints
+
+| Screen | Endpoint | Permission |
+|---|---|---|
+| Trigger catalogue | `GET /api/notifications/triggers` | `notification:view` |
+| Rules list / detail | `GET …/rules` · `GET …/rules/{id}` | `notification:view` |
+| Create rule | `POST …/rules` | `notification:manage` |
+| Rename · change template | `PUT …/rules/{id}/name` · `…/template` | `notification:manage` |
+| **Toggle** | `PUT …/rules/{id}/enabled` | `notification:manage` |
+| **Go live** | `PUT …/rules/{id}/dry-run` | `notification:manage` |
+| Delete rule | `DELETE …/rules/{id}` | `notification:manage` |
+| Preview | `POST …/rules/{id}/preview` | `notification:view` |
+| Test send | `POST …/rules/{id}/test` | `notification:send` |
+| Templates | `GET` · `POST` · `PUT …/templates` | view / manage |
+| Delete template | `DELETE …/templates/{id}` | `notification:manage` |
+| Outbox | `GET …/outbox` · `GET …/outbox/{id}` | `notification:view` |
+| Retry / release | `POST …/outbox/{id}/retry` | `notification:send` |
+| Drain now | `POST …/queue/drain` | `notification:send` |
+| Reminder sweep | `POST …/reminders/sweep` | `notification:send` |
+| Settings | `GET` · `PUT …/settings` | view / manage |
+| Suppressions | `GET` · `POST` · `DELETE …/suppressions` | view / manage |
+| Customer preferences | `GET` · `PUT /api/customers/{id}/notification-preferences` | `customer:view` / `customer:edit` |
+
+Rule and template writes take an optional `revision`, same as the three delivery writes — see §4 of
+`API-CONTEXT.md`.
+
+---
+
+## 11. Not in the UI
 
 `POST /api/webhooks/routific` is Routific's inbound endpoint. Anonymous, signature-verified, not for
 the browser. Listed only so nobody wires a page to it.
+
+`POST /api/public/unsubscribe/{token}` is anonymous and meant for a link in an email, not a screen.
+It is in §10 so it is not mistaken for something to build a page around.
