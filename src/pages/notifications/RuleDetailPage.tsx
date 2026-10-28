@@ -163,7 +163,7 @@ function PreviewText({ preview: p }: { preview: NotificationPreview }) {
       {missing.length ? (
         <Alert tone="danger" title={`${missing.length === 1 ? 'One placeholder' : `${missing.length} placeholders`} couldn’t be filled`}>
           {missing.map(m => <code key={m} style={{ marginRight: 8 }}>{`{{${m}}}`}</code>)}
-          <div style={{ marginTop: 6 }}>The customer would see {missing.length === 1 ? 'it' : 'them'} exactly like this. Check the spelling in the template, or try a delivery further along (a delivery date only exists once it’s delivered).</div>
+          <div style={{ marginTop: 6 }}>The customer would see {missing.length === 1 ? 'it' : 'them'} exactly like this. Check the spelling in the template, or try a delivery where that detail exists — a substitute, a receipt, a refused card.</div>
         </Alert>
       ) : <Alert tone="success">Every placeholder filled.</Alert>}
       <div style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--surface-card)' }}>

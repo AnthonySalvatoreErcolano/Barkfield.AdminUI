@@ -119,7 +119,8 @@ export function createFakeNotifications(
     return {
       CustomerFirstName: c?.firstName ?? null, CustomerLastName: c?.lastName ?? null, CustomerFullName: c ? `${c.firstName} ${c.lastName}` : null,
       DeliveryDate: d ? formatDay(d.scheduledFor, 'long') : nextDate ? formatDay(nextDate, 'long') : null,
-      DeliveredAt: d?.completedAt ? formatDay(d.completedAt, 'long') : null,
+      // The API renders as if now (BuildPlaceholders(..., DateTime.UtcNow)), so an undelivered one still reads naturally.
+      DeliveredAt: d ? formatDay(d.completedAt ?? new Date().toISOString(), 'long') : null,
       ItemCount: d ? String(d.lines.reduce((n, l) => n + l.quantity, 0)) : null,
       OrderTotal: d ? formatMoney(d.total) : null, DeliveryCity: d?.deliveryCity ?? null, ReceiptUrl: d?.squareReceiptUrl ?? null,
       ShopName: SHOP, ProductName: line?.productName ?? null, Quantity: line ? String(line.quantity) : null,

@@ -62,13 +62,14 @@ describe('rules', () => {
 
   it('previews against a real delivery, flags what it couldn’t fill, and queues a test', async () => {
     const { user, api } = await renderSignedIn('/notifications');
-    await user.click(await screen.findByRole('link', { name: 'Tell the customer when a delivery arrives' }));
-    const undelivered = api.fake.db.deliveries.find(d => !d.completedAt && d.scheduledFor >= new Date(Date.now() - 20 * 86400_000).toISOString())!;
+    await user.click(await screen.findByRole('link', { name: 'Tell the customer about a substitution' }));
+    // A delivery with nothing substituted: the substitute's name can't be filled.
+    const plain = api.fake.db.deliveries.find(d => d.lines[0] && !d.lines[0].substitutedWithProductName && d.scheduledFor >= new Date(Date.now() - 20 * 86400_000).toISOString())!;
     const picker = await screen.findByLabelText('Show it for a real delivery');
     await waitFor(() => expect(within(picker).getAllByRole('option').length).toBeGreaterThan(1));
-    await user.selectOptions(picker, undelivered.id);
+    await user.selectOptions(picker, plain.id);
     expect(await screen.findByText('One placeholder couldn’t be filled')).toBeInTheDocument();
-    expect(screen.getAllByText(/\{\{DeliveredAt\}\}/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\{\{SubstitutedWithProductName\}\}/).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: 'Send test' }));
     expect(await screen.findByText('Test queued')).toBeInTheDocument();

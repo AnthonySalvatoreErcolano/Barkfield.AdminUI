@@ -52,11 +52,11 @@ describe('templates', () => {
 describe('preview and the outbox', () => {
   it('leaves an unfillable placeholder visible, and lists it', async () => {
     const api = fresh();
-    const rule = (await api.notifications.rules()).find(r => r.name === 'Tell the customer when a delivery arrives')!;
-    const open = api.fake.db.deliveries.find(d => !d.completedAt)!; // not delivered, so DeliveredAt can't fill
-    const p = await api.notifications.preview(rule.id, open.id);
-    expect(p.bodyText).toContain('{{DeliveredAt}}');
-    expect(p.unresolvedPlaceholders).toEqual(['DeliveredAt']);
+    const rule = (await api.notifications.rules()).find(r => r.name === 'Tell the customer about a substitution')!;
+    const plain = api.fake.db.deliveries.find(d => d.lines[0] && !d.lines[0].substitutedWithProductName)!; // nothing substituted
+    const p = await api.notifications.preview(rule.id, plain.id);
+    expect(p.bodyText).toContain('{{SubstitutedWithProductName}}');
+    expect(p.unresolvedPlaceholders).toEqual(['SubstitutedWithProductName']);
     expect(p.isComplete).toBe(false);
   });
 
