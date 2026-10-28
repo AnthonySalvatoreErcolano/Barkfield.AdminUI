@@ -1,6 +1,6 @@
 // Live implementations over http.ts. No cross-cutting concerns here — those all belong to http.ts.
 import { clearAccessToken, configureHttp, http, refreshSessionWithin, setAccessToken } from '../http';
-import type { Api } from '../ports';
+import type { Api, NotificationSettings } from '../ports';
 import { toApiDay } from '../../lib/dates';
 
 /** Charging goes to Square once per delivery, and sending to Routific once per order; a day can take minutes. */
@@ -79,6 +79,10 @@ export function createLiveApi(): Api {
         http.get('/api/customers/{customerId}/subscriptions', { path: { customerId }, query: { includeCanceled } }),
       deliveries: (customerId, page) =>
         http.get('/api/customers/{customerId}/deliveries', { path: { customerId }, query: page }),
+      notificationPreferences: customerId => http.get('/api/customers/{customerId}/notification-preferences', { path: { customerId } }),
+      async setNotificationPreferences(customerId, body) {
+        await http.put('/api/customers/{customerId}/notification-preferences', { path: { customerId }, body });
+      },
     },
     pets: {
       get: (petId, signal) => http.get('/api/pets/{petId}', { path: { petId }, signal }),
@@ -266,6 +270,57 @@ export function createLiveApi(): Api {
       },
       async jumpTo(subscriptionId, groupId, itemId) {
         await http.post('/api/subscriptions/{subscriptionId}/rotation-groups/{groupId}/jump-to/{itemId}', { path: { subscriptionId, groupId, itemId } });
+      },
+    },
+    notifications: {
+      triggers: () => http.get('/api/notifications/triggers'),
+      templates: () => http.get('/api/notifications/templates'),
+      template: templateId => http.get('/api/notifications/templates/{templateId}', { path: { templateId } }),
+      createTemplate: body => http.post('/api/notifications/templates', { body }), // 201 with the id
+      async rewordTemplate(templateId, body, revision) {
+        await http.put('/api/notifications/templates/{templateId}', { path: { templateId }, body: { ...body, revision: revision ?? null } });
+      },
+      async deleteTemplate(templateId) {
+        await http.delete('/api/notifications/templates/{templateId}', { path: { templateId } });
+      },
+      rules: () => http.get('/api/notifications/rules'),
+      rule: ruleId => http.get('/api/notifications/rules/{ruleId}', { path: { ruleId } }),
+      createRule: body => http.post('/api/notifications/rules', { body }), // 201 with the id
+      async renameRule(ruleId, name, revision) {
+        await http.put('/api/notifications/rules/{ruleId}/name', { path: { ruleId }, body: { name, revision: revision ?? null } });
+      },
+      async changeRuleTemplate(ruleId, templateId, revision) {
+        await http.put('/api/notifications/rules/{ruleId}/template', { path: { ruleId }, body: { templateId, revision: revision ?? null } });
+      },
+      async setRuleEnabled(ruleId, enabled) {
+        await http.put('/api/notifications/rules/{ruleId}/enabled', { path: { ruleId }, body: { enabled } });
+      },
+      async setRuleDryRun(ruleId, dryRun) {
+        await http.put('/api/notifications/rules/{ruleId}/dry-run', { path: { ruleId }, body: { dryRun } });
+      },
+      async deleteRule(ruleId) {
+        await http.delete('/api/notifications/rules/{ruleId}', { path: { ruleId } });
+      },
+      preview: (ruleId, deliveryId) => http.post('/api/notifications/rules/{ruleId}/preview', { path: { ruleId }, body: { deliveryId } }),
+      test: (ruleId, deliveryId, toEmail) => http.post('/api/notifications/rules/{ruleId}/test', { path: { ruleId }, body: { deliveryId, toEmail: toEmail ?? null } }), // 202 with the id
+      outbox: (query, signal) => http.get('/api/notifications/outbox', { query, signal }),
+      outboxEntry: entryId => http.get('/api/notifications/outbox/{entryId}', { path: { entryId } }),
+      async retry(entryId) {
+        await http.post('/api/notifications/outbox/{entryId}/retry', { path: { entryId } });
+      },
+      drain: () => http.post('/api/notifications/queue/drain'),
+      sweep: force => http.post('/api/notifications/reminders/sweep', { query: { force: force || undefined } }),
+      // Untyped in the spec (an anonymous object); see NotificationSettings in ports.ts.
+      settings: async () => (await http.get('/api/notifications/settings')) as unknown as NotificationSettings,
+      async saveSettings(body) {
+        await http.put('/api/notifications/settings', { body });
+      },
+      suppressions: () => http.get('/api/notifications/suppressions'),
+      async suppress(body) {
+        await http.post('/api/notifications/suppressions', { body });
+      },
+      async unsuppress(suppressionId) {
+        await http.delete('/api/notifications/suppressions/{suppressionId}', { path: { suppressionId } });
       },
     },
     dispatch: {

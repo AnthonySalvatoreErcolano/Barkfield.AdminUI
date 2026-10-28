@@ -195,10 +195,11 @@ type Body<P extends keyof paths, M extends Method> =
   [RequestBody<P, M>] extends [never] ? never
     : RequestBody<P, M> extends { content: { 'application/json': infer B } } ? B : never;
 
-/** The JSON body of the operation's 200 (or 201 Created) response, or void when it has none. */
+/** The JSON body of the operation's 200 (or 201 Created, or 202 Accepted) response, or void when it has none. */
 export type ResponseOf<P extends keyof paths, M extends Method> =
   Op<P, M> extends { responses: { 200: { content: { 'application/json': infer R } } } } ? R
     : Op<P, M> extends { responses: { 201: { content: { 'application/json': infer R } } } } ? R
+    : Op<P, M> extends { responses: { 202: { content: { 'application/json': infer R } } } } ? R
     : void;
 
 type Options<P extends keyof paths, M extends Method> =
